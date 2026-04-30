@@ -1,0 +1,89 @@
+.comments-shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.comment-card,
+.comment-form {
+  padding: 1rem 1.1rem;
+  border: 1px solid #dbe4ef;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+}
+
+.comment-card__header,
+.comment-form__actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.comment-card__body {
+  margin: 0.85rem 0;
+  white-space: pre-wrap;
+  color: #0f172a;
+}
+
+.comment-card__attachments,
+.comment-form__attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.comments-empty-state {
+  padding: 1.25rem;
+  border: 1px dashed #dbe4ef;
+  border-radius: 1rem;
+  color: #64748b;
+  text-align: center;
+}
+
+.comment-form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.comment-form__title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #0f172a;
+}
+
+.comment-form__caption {
+  margin-top: 0.2rem;
+  font-size: 0.84rem;
+  color: #64748b;
+}
+
+.comment-form :is(.form-control, .form-select) {
+  border-radius: 0.9rem;
+  border-color: #d7e3f2;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.comment-form :is(.form-control, .form-select):focus {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.12);
+}
+
+.comment-form__textarea {
+  min-height: 7rem;
+}
+
+@media (max-width: 575.98px) {
+  .comment-card__header,
+  .comment-form__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .comment-form__actions .btn {
+    width: 100%;
+  }
+}

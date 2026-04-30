@@ -1,0 +1,80 @@
+<section class="chat-list-panel">
+  <div class="chat-list-panel__header">
+    <div>
+      <div class="chat-list-panel__eyebrow">Workspace Chat</div>
+      <h2 class="chat-list-panel__title">Conversations</h2>
+    </div>
+
+    @if (canCreateGroup) {
+      <button type="button" class="btn btn-outline-primary btn-sm" (click)="createGroup.emit()">
+        New Group
+      </button>
+    }
+  </div>
+
+  <div class="chat-list-panel__search">
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search chats or contacts"
+      [(ngModel)]="search"
+    />
+  </div>
+
+  <div class="chat-list-panel__section">
+    <div class="chat-list-panel__section-title">Direct Contacts</div>
+
+    @if (filteredContacts().length === 0) {
+      <div class="chat-list-panel__empty-small">No related users available.</div>
+    } @else {
+      <div class="chat-list-panel__contacts">
+        @for (contact of filteredContacts(); track contact.id) {
+          <button type="button" class="chat-contact" (click)="startPrivateChat.emit(contact.id)">
+            <span class="chat-contact__initial">{{ contact.name.charAt(0) }}</span>
+            <span class="chat-contact__meta">
+              <span class="chat-contact__name">{{ contact.name }}</span>
+              <span class="chat-contact__role">{{ contact.roles.join(', ') || contact.email }}</span>
+            </span>
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="chat-list-panel__section">
+    <div class="chat-list-panel__section-title">Recent Chats</div>
+
+    @if (loading) {
+      <div class="chat-list-panel__empty">Loading conversations...</div>
+    } @else if (filteredChats().length === 0) {
+      <div class="chat-list-panel__empty">No conversations yet.</div>
+    } @else {
+      <div class="chat-list-panel__items">
+        @for (chat of filteredChats(); track chat.id) {
+          <button
+            type="button"
+            class="chat-list-item"
+            [class.chat-list-item--active]="chat.id === selectedChatId"
+            (click)="selectChat.emit(chat.id)"
+          >
+            <div class="chat-list-item__avatar">
+              {{ displayName(chat).charAt(0) }}
+            </div>
+            <div class="chat-list-item__body">
+              <div class="chat-list-item__top">
+                <span class="chat-list-item__title">{{ displayName(chat) }}</span>
+                <span class="chat-list-item__time">{{ formatTime(chat.last_message_at) }}</span>
+              </div>
+              <div class="chat-list-item__bottom">
+                <span class="chat-list-item__preview">{{ preview(chat) }}</span>
+                @if (chat.unread_count > 0) {
+                  <span class="chat-list-item__badge">{{ chat.unread_count }}</span>
+                }
+              </div>
+            </div>
+          </button>
+        }
+      </div>
+    }
+  </div>
+</section>

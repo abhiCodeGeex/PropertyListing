@@ -1,0 +1,12 @@
+.field-block {
+  position: relative;
+}
+
+.invalid-feedback {
+  font-size: 0.875rem;
+}
+
+[cFormFloating] .is-invalid,
+[cFormFloating] .form-select.is-invalid {
+  border-color: var(--cui-danger, #dc3545);
+}

@@ -1,0 +1,26 @@
+<div class="timeline" *ngIf="items.length; else noTimeline">
+  <div class="timeline-item" *ngFor="let item of items">
+    <div class="timeline-dot"></div>
+    <div class="timeline-card">
+      <div class="timeline-card__header">
+        <div class="fw-semibold">{{ item.message || item.action }}</div>
+        <div class="text-body-secondary small">{{ formatTimestamp(item.created_at) }}</div>
+      </div>
+
+      <div class="timeline-card__actor">
+        {{ item.user?.name || 'System' }}
+      </div>
+
+      <div class="timeline-card__meta">
+        <span *ngIf="item.from_status || item.to_status">
+          {{ statusLabel(item.from_status) }} to {{ statusLabel(item.to_status) }}
+        </span>
+        <span *ngIf="item.reason"><strong>Reason:</strong> {{ item.reason }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #noTimeline>
+  <div class="timeline-empty-state">Status history will appear here as the request changes.</div>
+</ng-template>

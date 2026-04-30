@@ -1,0 +1,178 @@
+<c-container [fluid]="true" class="border-bottom px-4 d-print-none">
+
+  <button [cSidebarToggle]="sidebarId()" cHeaderToggler class="btn" toggle="visible" style="margin-inline-start: -14px;"
+    aria-label="Toggle sidebar navigation">
+    <svg cIcon name="cilMenu" size="lg"></svg>
+  </button>
+
+  <c-header-nav class="d-none d-md-flex">
+    <c-nav-item>
+      <a cNavLink routerLink="/dashboard" routerLinkActive="active">
+        Dashboard
+      </a>
+    </c-nav-item>
+  </c-header-nav>
+
+  <c-header-nav class="ms-auto"></c-header-nav>
+
+  <c-header-nav class="ms-auto ms-md-0">
+    <div class="nav-item py-1">
+      <div class="vr h-100 mx-2 text-body text-opacity-75"></div>
+    </div>
+
+    <div class="notification-dropdown">
+      <button
+        type="button"
+        class="position-relative notification-toggle"
+        aria-label="Open notifications"
+        [attr.aria-expanded]="isNotificationMenuOpen()"
+        (click)="toggleNotificationMenu()">
+        <svg cIcon name="cilBell" size="lg"></svg>
+
+        @if (unreadCount() > 0) {
+        <span class="notification-badge">
+          {{ unreadCount() }}
+        </span>
+        }
+      </button>
+
+      @if (isNotificationMenuOpen()) {
+      <div class="notification-menu p-0">
+        <div class="notification-menu__header">
+          <div class="notification-menu__header-copy">
+            <div class="notification-menu__eyebrow">Workspace Inbox</div>
+            <div class="notification-menu__title">Notifications</div>
+            <div class="notification-menu__subtitle">{{ notificationSummary() }}</div>
+          </div>
+
+          <button type="button" class="notification-menu__close" aria-label="Close notifications" (click)="closeNotificationMenu()">
+            <svg cIcon name="cilX" size="lg"></svg>
+          </button>
+
+          <div class="notification-menu__summary">
+            <div class="notification-stat-card">
+              <span class="notification-stat-card__value">{{ unreadCount() }}</span>
+              <span class="notification-stat-card__label">Unread</span>
+            </div>
+            <div class="notification-stat-card notification-stat-card--muted">
+              <span class="notification-stat-card__value">{{ readCount() }}</span>
+              <span class="notification-stat-card__label">Reviewed</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="notification-menu__toolbar">
+          <div class="notification-toolbar__segment">
+            <span class="notification-summary-pill">Live activity</span>
+            <span class="notification-toolbar__hint">Payments, subscriptions, assignments, and agreement events.</span>
+          </div>
+          @if (unreadCount() > 0) {
+          <button class="notification-toolbar__action" type="button" (click)="markAllAsRead()">
+            Mark all as read
+          </button>
+          }
+        </div>
+
+        <div class="notification-menu__list" (scroll)="onNotificationScroll($event)">
+          @if (hasNotifications()) {
+          @for (n of notifications(); track n.id) {
+          <button type="button" class="notification-item" [class.notification-item--unread]="!n.read_at"
+            (click)="openNotification(n)">
+            <span class="notification-item__icon" [attr.data-tone]="notificationTone(n)">
+              {{ notificationGlyph(n) }}
+            </span>
+
+            <span class="notification-item__content">
+              <span class="notification-item__meta">
+                <span class="notification-item__category">{{ notificationCategory(n) }}</span>
+                <span class="notification-item__time">{{ notificationTime(n) }}</span>
+              </span>
+
+              <span class="notification-item__title-row">
+                <span class="notification-item__title">{{ n.title }}</span>
+                @if (!n.read_at) {
+                <span class="notification-item__unread-dot"></span>
+                }
+              </span>
+
+              <span class="notification-item__message">{{ n.message }}</span>
+            </span>
+          </button>
+          }
+          } @else {
+          <div class="notification-empty-state">
+            <div class="notification-empty-state__icon">NT</div>
+            <div class="notification-empty-state__title">No new notifications</div>
+            <div class="notification-empty-state__text">Updates about payments, agreements, subscriptions, and approvals will appear here.</div>
+          </div>
+          }
+
+          @if (isLoadingMore()) {
+          <div class="notification-menu__loader">Loading more notifications...</div>
+          } @else if (hasNotifications() && !hasMoreNotifications()) {
+          <div class="notification-menu__loader notification-menu__loader--muted">You have reached the end of your recent notifications.</div>
+          }
+        </div>
+
+        @if (hasNotifications()) {
+        <div class="notification-menu__footer">
+          <span class="notification-menu__footer-text">Open any item to review the related record.</span>
+          <a class="notification-menu__footer-link" routerLink="/dashboard" (click)="closeNotificationMenu()">Workspace</a>
+        </div>
+        }
+      </div>
+      }
+    </div>
+
+    <div class="nav-item py-1">
+      <div class="vr h-100 mx-2 text-body text-opacity-75"></div>
+    </div>
+  </c-header-nav>
+
+  <c-header-nav class="mx-0">
+    <c-dropdown variant="nav-item" [popperOptions]="{ placement: 'bottom-start' }">
+      <button [caret]="false" cDropdownToggle class="py-0 pe-0" aria-label="Open user menu">
+        <c-avatar shape="rounded-circle" size="md" status="success">
+          <img [src]="profileImage()" alt="User avatar" (error)="onImageError($event)"
+            style="width:100%; height:100%; object-fit:cover; border-radius:10px;">
+        </c-avatar>
+      </button>
+
+      <ul cDropdownMenu class="p-3" style="min-width:240px; font-size:0.9rem;">
+        <li class="pb-3 border-bottom">
+          <strong class="text-muted mb-2 d-block">Roles</strong>
+
+          <div class="d-flex flex-wrap gap-2">
+            @for (role of roles(); track role) {
+            <span class="role-chip" [ngClass]="{
+                'role-super-admin': role === 'super-admin',
+                'role-tenant': role === 'tenant',
+                'role-owner': role === 'owner',
+                'role-agent': role === 'agent'
+              }">
+              {{ role | titlecase }}
+            </span>
+            }
+          </div>
+        </li>
+
+        <li class="mt-2">
+          <a cDropdownItem routerLink="/profile"
+            class="d-flex align-items-center gap-2 py-2 px-2 rounded hover-bg-light">
+            <svg cIcon name="cilUser" class="me-2"></svg>
+            Profile
+          </a>
+        </li>
+
+        <li>
+          <a cDropdownItem (click)="logout()"
+            class="d-flex align-items-center gap-2 py-2 px-2 rounded hover-bg-light text-danger cursor-pointer">
+            <svg cIcon name="cilAccountLogout" class="me-2"></svg>
+            Logout
+          </a>
+        </li>
+      </ul>
+    </c-dropdown>
+  </c-header-nav>
+
+</c-container>

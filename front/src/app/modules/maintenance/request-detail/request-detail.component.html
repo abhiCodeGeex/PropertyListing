@@ -1,0 +1,202 @@
+<div class="container-fluid py-4" *ngIf="request; else loadingState">
+  <div class="maintenance-detail">
+    <section class="maintenance-detail__hero">
+      <div>
+        <a [routerLink]="backLink()" class="maintenance-detail__back-link">Back</a>
+        <h1 class="maintenance-detail__title">{{ request.title }}</h1>
+        <div class="maintenance-detail__badges">
+          <span class="badge maintenance-detail__badge" [ngClass]="statusClass(request.status)">{{ statusLabel(request.status) }}</span>
+          <span class="badge maintenance-detail__badge" [ngClass]="priorityClass(request.priority)">{{ priorityLabel(request.priority) }}</span>
+        </div>
+      </div>
+
+      <div class="maintenance-detail__timestamps">
+        <div>Created: {{ formatTimestamp(request.created_at) }}</div>
+        <div>Last activity: {{ formatTimestamp(request.last_activity_at || request.updated_at) }}</div>
+      </div>
+    </section>
+
+    <div class="maintenance-detail__layout">
+      <div class="maintenance-detail__main">
+        <section class="maintenance-detail__card">
+          <div class="maintenance-detail__card-body">
+            <h2 class="maintenance-detail__section-title">Request Details</h2>
+
+            <div class="maintenance-detail__facts">
+              <div class="maintenance-detail__fact">
+                <div class="maintenance-detail__fact-label">Property</div>
+                <div class="fw-semibold">{{ request.property.property_name }}</div>
+                <div class="text-body-secondary small">{{ request.property.address }}</div>
+              </div>
+
+              <div class="maintenance-detail__fact">
+                <div class="maintenance-detail__fact-label">Tenant</div>
+                <div class="fw-semibold">{{ request.tenant?.name || 'Tenant' }}</div>
+                <div class="text-body-secondary small">{{ request.tenant?.email }}</div>
+              </div>
+
+              <div class="maintenance-detail__fact">
+                <div class="maintenance-detail__fact-label">Assignee</div>
+                <div class="fw-semibold">{{ request.assignee?.name || 'Unassigned' }}</div>
+                <div class="text-body-secondary small">{{ request.assignee?.email || 'No assignee selected yet.' }}</div>
+              </div>
+
+              <div class="maintenance-detail__fact">
+                <div class="maintenance-detail__fact-label">Category</div>
+                <div class="fw-semibold">{{ request.category || 'General issue' }}</div>
+              </div>
+            </div>
+
+            <h3 class="maintenance-detail__subheading">Description</h3>
+            <p class="maintenance-detail__description">{{ request.description }}</p>
+          </div>
+        </section>
+
+        <section class="maintenance-detail__card" *ngIf="request.attachments?.length">
+          <div class="maintenance-detail__card-body">
+            <h2 class="maintenance-detail__section-title">Attachments</h2>
+            <div class="maintenance-detail__attachments">
+              <button
+                type="button"
+                class="maintenance-detail__attachment"
+                *ngFor="let attachment of request.attachments"
+                (click)="downloadAttachment(attachment)"
+              >
+                <div class="fw-semibold">{{ attachment.original_name }}</div>
+                <div class="small text-body-secondary">
+                  {{ attachment.mime_type }} | {{ fileSize(attachment.size) }}
+                </div>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="maintenance-detail__card">
+          <div class="maintenance-detail__card-body">
+            <h2 class="maintenance-detail__section-title">Comments</h2>
+            <app-comments-section
+              [requestId]="request.id"
+              [comments]="request.comments || []"
+              [readOnly]="false"
+              (commentAdded)="loadRequest(false)"
+            />
+          </div>
+        </section>
+      </div>
+
+      <aside class="maintenance-detail__sidebar">
+        <section class="maintenance-detail__card" *ngIf="canManageRequest() && request.status === 'pending'">
+          <div class="maintenance-detail__card-body">
+            <h2 class="maintenance-detail__section-title">Approval Decision</h2>
+
+            <label class="form-label fw-semibold">Reason</label>
+            <textarea
+              class="form-control mb-3"
+              rows="3"
+              [(ngModel)]="decisionReason"
+              name="decisionReason"
+              [disabled]="actionLoading"
+              placeholder="Record the reason for approval or rejection."
+            ></textarea>
+
+            <label class="form-label fw-semibold">Message</label>
+            <textarea
+              class="form-control mb-3"
+              rows="3"
+              [(ngModel)]="decisionMessage"
+              name="decisionMessage"
+              [disabled]="actionLoading"
+              placeholder="Optional note that will be shared with the tenant."
+            ></textarea>
+
+            <div class="maintenance-detail__action-row">
+              <button type="button" class="btn btn-success flex-fill" [disabled]="actionLoading" (click)="approve()">
+                Approve
+              </button>
+              <button type="button" class="btn btn-danger flex-fill" [disabled]="actionLoading" (click)="reject()">
+                Reject
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="maintenance-detail__card" *ngIf="canAssign()">
+          <div class="maintenance-detail__card-body">
+            <h2 class="maintenance-detail__section-title">Assign Request</h2>
+
+            <label class="form-label fw-semibold">Assignee</label>
+            <select class="form-select mb-3" [(ngModel)]="selectedAssignee" name="selectedAssignee" [disabled]="actionLoading">
+              <option [ngValue]="null">Select assignee</option>
+              <option *ngFor="let option of assigneeOptions" [ngValue]="option.id">
+                {{ option.name }} ({{ option.email }})
+              </option>
+            </select>
+
+            <label class="form-label fw-semibold">Message</label>
+            <textarea
+              class="form-control mb-3"
+              rows="3"
+              [(ngModel)]="assignMessage"
+              name="assignMessage"
+              [disabled]="actionLoading"
+              placeholder="Optional assignment note."
+            ></textarea>
+
+            <button type="button" class="btn btn-primary w-100" [disabled]="actionLoading" (click)="assignRequest()">
+              Save Assignment
+            </button>
+          </div>
+        </section>
+
+        <section class="maintenance-detail__card" *ngIf="canManageRequest() && availableStatusOptions().length">
+          <div class="maintenance-detail__card-body">
+            <h2 class="maintenance-detail__section-title">Update Status</h2>
+
+            <label class="form-label fw-semibold">New Status</label>
+            <select class="form-select mb-3" [(ngModel)]="selectedStatus" name="selectedStatus" [disabled]="actionLoading">
+              <option value="">Select status</option>
+              <option *ngFor="let status of availableStatusOptions()" [value]="status">{{ statusLabel(status) }}</option>
+            </select>
+
+            <label class="form-label fw-semibold">Reason</label>
+            <textarea
+              class="form-control mb-3"
+              rows="2"
+              [(ngModel)]="statusReason"
+              name="statusReason"
+              [disabled]="actionLoading"
+              placeholder="Optional status reason."
+            ></textarea>
+
+            <label class="form-label fw-semibold">Message</label>
+            <textarea
+              class="form-control mb-3"
+              rows="3"
+              [(ngModel)]="statusMessage"
+              name="statusMessage"
+              [disabled]="actionLoading"
+              placeholder="Optional note for the tenant."
+            ></textarea>
+
+            <button type="button" class="btn btn-primary w-100" [disabled]="actionLoading" (click)="updateStatus()">
+              Apply Status Update
+            </button>
+          </div>
+        </section>
+
+        <section class="maintenance-detail__card">
+          <div class="maintenance-detail__card-body">
+            <h2 class="maintenance-detail__section-title">Status Timeline</h2>
+            <app-status-timeline [items]="request.status_history || []" />
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<ng-template #loadingState>
+  <div class="container-fluid py-5 maintenance-detail__loading-state">
+    {{ loading ? 'Loading maintenance request...' : 'Maintenance request not available.' }}
+  </div>
+</ng-template>

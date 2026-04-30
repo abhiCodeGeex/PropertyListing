@@ -1,0 +1,181 @@
+.rent-card-container {
+  max-width: 480px;
+  margin: 40px auto;
+  padding: 24px;
+  border-radius: 12px;
+  background-color: #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  text-align: center;
+
+  h2 {
+    margin-bottom: 20px;
+    font-size: 24px;
+    color: #333;
+  }
+
+  .card-box {
+    padding: 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+
+  .btn-subscribe {
+    width: 100%;
+    padding: 14px 0;
+    background-color: #635bff;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    &:hover:not(:disabled) {
+      background-color: #5349d4;
+    }
+  }
+
+  .payment-message {
+    margin-top: 16px;
+    color: #d32f2f;
+    font-weight: 500;
+  }
+}
+
+.modal-body {
+  position: relative;
+}
+
+.modal-dialog {
+  max-width: 560px;
+}
+
+.modal-content {
+  border: 0;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+}
+
+.modal-header,
+.modal-footer {
+  gap: 0.75rem;
+}
+
+.modal-title {
+  line-height: 1.35;
+}
+
+#card-element {
+  min-height: 3rem;
+}
+
+.payment-progress-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(6px);
+  text-align: center;
+}
+
+.payment-progress-overlay__spinner {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  border: 3px solid rgba(99, 91, 255, 0.16);
+  border-top-color: #635bff;
+  animation: payment-progress-spin 0.8s linear infinite;
+}
+
+.payment-progress-overlay__title {
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.payment-progress-overlay__text {
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  max-width: 20rem;
+}
+
+@keyframes payment-progress-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 767px) {
+  .modal {
+    padding: 0.75rem;
+  }
+
+  .modal-dialog {
+    margin: 0;
+    max-width: 100%;
+    min-height: calc(100vh - 1.5rem);
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .modal-content {
+    width: 100%;
+    border-radius: 1.1rem 1.1rem 0.9rem 0.9rem;
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .modal-header {
+    align-items: flex-start;
+  }
+
+  .modal-title {
+    font-size: 1rem;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 479px) {
+  .modal {
+    padding: 0.35rem;
+  }
+
+  .modal-dialog {
+    min-height: calc(100vh - 0.7rem);
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+  }
+}

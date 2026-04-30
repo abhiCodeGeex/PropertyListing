@@ -1,0 +1,34 @@
+<c-modal [(visible)]="modalVisible" backdrop="static" size="lg">
+    <c-modal-header>
+        <h5 cModalTitle>Assign Property Manager</h5>
+        <button cButtonClose (click)="closeModal()"></button>
+    </c-modal-header>
+
+    <c-modal-body>
+        <form [formGroup]="form" (ngSubmit)="submit()">
+            <input type="hidden" formControlName="propertyId" />
+
+            <div class="mb-3">
+                <label class="required-label">Property Manager</label>
+                <ng-select [items]="managers" bindLabel="name" bindValue="id" placeholder="Select manager"
+                    formControlName="manager_id" [searchable]="true" [compareWith]="compareManagers"
+                    [class.is-invalid]="isInvalid('manager_id')">
+                    <ng-template ng-option-tmp let-item="item">
+                        {{ item.name }} ({{ item.email }})
+                    </ng-template>
+                </ng-select>
+                <div class="invalid-feedback d-block">{{ getError('manager_id') }}</div>
+                <div class="form-text">Only users with the property manager role appear here.</div>
+            </div>
+
+            <div class="text-end">
+                <button cButton color="success" type="submit">
+                    Assign
+                </button>&nbsp;
+                <button cButton color="secondary" type="button" (click)="closeModal()">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </c-modal-body>
+</c-modal>

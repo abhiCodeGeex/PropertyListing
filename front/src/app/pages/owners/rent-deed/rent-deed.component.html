@@ -1,0 +1,319 @@
+<div class="container-fluid workspace-page">
+    <div class="surface-panel toolbar-panel">
+        <div class="toolbar-header">
+            <div class="toolbar-title">
+                <h5>Rent Deeds</h5>
+                <p>Track agreements, tenancy ownership, and due-day configuration with cleaner summaries.</p>
+            </div>
+
+            <div class="toolbar-actions">
+                <div class="search-control">
+                    <input type="text" class="form-control" placeholder="Search by tenant or owner"
+                        [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange($event)" />
+                    <span class="search-icon">
+                        <c-icon name="cil-magnifying-glass"></c-icon>
+                    </span>
+                </div>
+
+                @if (hasAtionRole('manage_rent_deed')) {
+                <button cButton color="primary" class="enterprise-btn-primary d-flex align-items-center gap-2"
+                    (click)="openCreateModal()">
+                    <c-icon name="cil-plus"></c-icon>
+                    Create Rent Deed
+                </button>
+                }
+            </div>
+        </div>
+</div>
+
+@if (viewingPropertyDetail) {
+<div class="surface-panel deed-detail-panel">
+    <div class="deed-detail-panel__header">
+        <div>
+            <div class="deed-detail-panel__eyebrow">Property Rent Deed</div>
+            <h4 class="deed-detail-panel__title">{{ detailProperty?.property_name || detailProperty?.propertyName || 'Selected Property' }}</h4>
+            <p class="deed-detail-panel__subtitle">
+                {{ detailProperty?.address || 'Property details are loading.' }}
+            </p>
+        </div>
+
+        <div class="deed-detail-panel__badges">
+            @if (highlightedDeed) {
+            <span class="soft-pill soft-pill--primary">Agreement #{{ highlightedDeed.agreement_number }}</span>
+            <span class="soft-pill soft-pill--warning">Due Day {{ highlightedDeed.rent_due_date }}</span>
+            } @else {
+            <span class="soft-pill soft-pill--neutral">No Rent Deed Yet</span>
+            }
+            <span class="soft-pill soft-pill--primary">{{ detailProperty?.payment_mode || '-' }}</span>
+        </div>
+    </div>
+
+    @if (detailProperty) {
+    <div class="deed-detail-grid">
+        <div class="deed-detail-card">
+            <div class="deed-detail-card__title">Rent Deed Details</div>
+            <div class="deed-detail-list">
+                <div><span>Agreement Number</span><strong>{{ highlightedDeed?.agreement_number || '-' }}</strong></div>
+                <div><span>Agreement Date</span><strong>{{ highlightedDeed?.agreement_date ? (highlightedDeed.agreement_date | date:'mediumDate') : '-' }}</strong></div>
+                <div><span>Owner</span><strong>{{ highlightedDeed?.owner?.name || detailProperty?.owner?.name || '-' }}</strong></div>
+                <div><span>Tenant</span><strong>{{ highlightedDeed?.tenant?.name || detailTenants[0]?.name || '-' }}</strong></div>
+                <div><span>Rent Due Date</span><strong>{{ highlightedDeed?.rent_due_date || '-' }}</strong></div>
+                <div><span>Maintenance Charges</span><strong>{{ highlightedDeed?.maintenance_charges || '-' }}</strong></div>
+                <div><span>Size</span><strong>{{ highlightedDeed?.size || '-' }}</strong></div>
+                <div><span>Usage</span><strong>{{ highlightedDeed?.usage || '-' }}</strong></div>
+                <div><span>Subscription</span><strong>{{ highlightedDeed ? subscriptionStatusLabel(highlightedDeed) : '-' }}</strong></div>
+                <div class="deed-detail-list__wide"><span>Other Details</span><strong>{{ highlightedDeed?.other_details || 'No extra deed notes.' }}</strong></div>
+            </div>
+        </div>
+
+        <div class="deed-detail-card">
+            <div class="deed-detail-card__title">Property Details</div>
+            <div class="deed-detail-list">
+                <div><span>Property Type</span><strong>{{ detailProperty?.property_type || detailProperty?.propertyType || '-' }}</strong></div>
+                <div><span>Monthly Rent</span><strong>{{ detailProperty?.monthly_rent ? formatCurrency(detailProperty.monthly_rent) : '-' }}</strong></div>
+                <div><span>Security Amount</span><strong>{{ detailProperty?.security_amount ? formatCurrency(detailProperty.security_amount) : '-' }}</strong></div>
+                <div><span>Payment Mode</span><strong>{{ detailProperty?.payment_mode || '-' }}</strong></div>
+                <div><span>Electricity Bill</span><strong>{{ detailProperty?.electricity_bill_paid_by || '-' }}</strong></div>
+                <div><span>Manager</span><strong>{{ detailProperty?.manager?.name || 'Not assigned' }}</strong></div>
+                <div class="deed-detail-list__wide"><span>Tenants</span><strong>{{ detailTenantNames }}</strong></div>
+                <div class="deed-detail-list__wide"><span>Refund Terms</span><strong>{{ detailProperty?.refund_terms || '-' }}</strong></div>
+                <div class="deed-detail-list__wide"><span>Agreement Duration</span><strong>{{ detailProperty?.agreement_duration || '-' }}</strong></div>
+                <div class="deed-detail-list__wide"><span>Maintenance Responsibilities</span><strong>{{ detailProperty?.maintenance_responsibilities || '-' }}</strong></div>
+                <div class="deed-detail-list__wide"><span>Termination Clause</span><strong>{{ detailProperty?.termination_clause || '-' }}</strong></div>
+                <div class="deed-detail-list__wide"><span>Late Payment Penalty</span><strong>{{ detailProperty?.late_payment_penalty || '-' }}</strong></div>
+            </div>
+        </div>
+    </div>
+    }
+
+    @if (!highlightedDeed) {
+    <div class="deed-detail-panel__empty">
+        No rent deed exists for this property yet. Property details are shown above so you can confirm the selected listing.
+    </div>
+    }
+</div>
+}
+
+    <div class="card-grid">
+        @for (deed of rentDeeds; track deed.id) {
+            <div class="entity-card">
+                <div class="entity-card__header">
+                    <div>
+                        <h6 class="entity-card__title">Agreement #{{ deed.agreement_number }}</h6>
+                        <p class="entity-card__subtitle">{{ deed.property?.property_name }}</p>
+                    </div>
+                    <span class="soft-pill soft-pill--primary">Due Day {{ deed.rent_due_date }}</span>
+                </div>
+
+                <div class="entity-card__stack">
+                    <div class="entity-card__meta">
+                        <div>
+                            <div class="entity-card__meta-label">Agreement Date</div>
+                            <div class="entity-card__meta-value">{{ deed.agreement_date | date:'mediumDate' }}</div>
+                        </div>
+                        <div class="metric-chip">{{ deed.property?.manager?.name || 'No Manager' }}</div>
+                    </div>
+
+                    <div>
+                        <span class="entity-card__meta-label">Subscription</span>
+                        <div class="mt-1">
+                            <span [class]="subscriptionStatusClass(deed)">{{ subscriptionStatusLabel(deed) }}</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column gap-2">
+                        <div><span class="entity-card__meta-label">Owner</span><div class="table-cell-strong">{{ deed.owner?.name }}</div></div>
+                        <div><span class="entity-card__meta-label">Tenant</span><div class="table-cell-strong">{{ deed.tenant?.name }}</div></div>
+                        <div><span class="entity-card__meta-label">Notes</span><div class="table-cell-soft">{{ deed.other_details || 'No extra details' }}</div></div>
+                    </div>
+                </div>
+
+                @if(hasAtionRole('manage_rent_deed') || canManageSubscription()){
+                <div class="entity-card__footer d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                    @if (deed.subscription_active === 1 && deed.tenancy_id && canManageSubscription()) {
+                    <button cButton color="danger" size="sm" (click)="openSubscriptionCancelModal(deed)">
+                        Schedule Subscription Cancellation
+                    </button>
+                    }
+
+                    <div class="entity-card__actions justify-content-end">
+                        @if(hasAtionRole('manage_rent_deed')){
+                        <button cButton color="warning" size="sm" class="interactive-icon-btn" (click)="openEditModal(deed)">
+                            <c-icon name="cil-pencil"></c-icon>
+                        </button>
+                        <button cButton color="danger" size="sm" class="interactive-icon-btn" (click)="confirmDelete(deed)">
+                            <c-icon name="cil-trash"></c-icon>
+                        </button>
+                        }
+                    </div>
+                </div>
+                }
+            </div>
+        }
+
+        @if (rentDeeds.length === 0) {
+        <div class="empty-state-panel">
+            <div class="empty-state-icon">
+                <c-icon name="cil-description"></c-icon>
+            </div>
+            <div class="fw-semibold mb-1">No rent deeds found</div>
+            <div>Create a deed to link tenancy terms with a property.</div>
+        </div>
+        }
+    </div>
+
+    <div class="page-pagination">
+                <c-pagination>
+                    <li cPageItem [disabled]="page === 1">
+                        <a cPageLink (click)="pageChanged(page - 1)">Previous</a>
+                    </li>
+                    @for (p of pages; track p) {
+                    <li cPageItem [class.active]="page === p">
+                        <a cPageLink (click)="pageChanged(p)">{{ p }}</a>
+                    </li>
+                    }
+                    <li cPageItem [disabled]="page === totalPages">
+                        <a cPageLink (click)="pageChanged(page + 1)">Next</a>
+                    </li>
+                </c-pagination>
+    </div>
+</div>
+
+<!-- Modal -->
+<c-modal [visible]="deedModalVisible" backdrop="static" size="lg">
+    <c-modal-header>
+        <h5 cModalTitle class="mb-0">{{ isEditMode ? 'Edit Rent Deed' : 'Create Rent Deed' }}</h5>
+        <button cButtonClose (click)="toggleModal()"></button>
+    </c-modal-header>
+
+    <c-modal-body>
+        <form [formGroup]="form" (ngSubmit)="submit()">
+            <div class="row g-3">
+                <!-- E-Stamp -->
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold required-label">E-Stamp</label>
+                    <input type="text" class="form-control" formControlName="estamp"
+                        placeholder="Enter agreement or e-stamp reference number"
+                        [class.is-invalid]="hasError('estamp')" />
+                    <div class="invalid-feedback">{{ getError('estamp') }}</div>
+                </div>
+
+                <!-- Agreement Date -->
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold required-label">Agreement Date</label>
+                    <mat-form-field appearance="outline" class="w-100">
+                        <input matInput [matDatepicker]="agreementPicker" formControlName="agreementDate"
+                            placeholder="Select agreement date" [class.is-invalid]="hasError('agreementDate')" />
+                        <mat-datepicker-toggle matIconSuffix [for]="agreementPicker"></mat-datepicker-toggle>
+                        <mat-datepicker #agreementPicker></mat-datepicker>
+                    </mat-form-field>
+                    <div class="invalid-feedback">{{ getError('agreementDate') }}</div>
+                </div>
+
+                <!-- Property -->
+                <div class="col-md-12">
+                    <label class="form-label fw-semibold required-label">Property</label>
+                    <ng-select [items]="properties" bindLabel="propertyName" formControlName="propertyId"
+                        placeholder="Select a property for this rent deed" [class.is-invalid]="hasError('propertyId')"
+                        (change)="loadPropertyDetails($event)">
+                    </ng-select>
+                    <div class="invalid-feedback d-block">{{ getError('propertyId') }}</div>
+                    <div class="form-text">Shared commercial and payment details are pulled from the selected property.</div>
+                </div>
+
+                <!-- Property Details -->
+                @if (selectedProperty) {
+                <div class="col-md-12 bg-light p-3 rounded-3 shadow-sm">
+                    <h6 class="mb-3 fw-bold">Property Details</h6>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Address</label>
+                            <div class="form-control bg-white">{{ selectedProperty.address }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Monthly Rent</label>
+                            <div class="form-control bg-white">{{ selectedProperty.monthly_rent }}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Payment Mode</label>
+                            <div class="form-control bg-white">{{ selectedProperty.payment_mode }}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Security Amount</label>
+                            <div class="form-control bg-white">{{ selectedProperty.security_amount }}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Electricity Bill Paid By</label>
+                            <div class="form-control bg-white">{{ selectedProperty.electricity_bill_paid_by }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Refund Terms</label>
+                            <div class="form-control bg-white">{{ selectedProperty.refund_terms || '-' }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Termination Clause</label>
+                            <div class="form-control bg-white">{{ selectedProperty.termination_clause || '-' }}</div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        @for (field of propertyFields; track field.name) {
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold" [class.required-label]="field.name === 'rentDueDate' || field.name === 'maintenanceCharges'">
+                                {{ field.label }}
+                            </label>
+
+                            @if (field.type !== 'select') {
+                            <input [type]="field.type" class="form-control" [formControlName]="field.name"
+                                [placeholder]="field.name === 'size' ? 'Enter unit size' : field.name === 'usage' ? 'Example: Residential lease' : 'Enter value'"
+                                [attr.min]="field.name === 'rentDueDate' ? 1 : null"
+                                [attr.max]="field.name === 'rentDueDate' ? 20 : null"
+                                [attr.step]="field.name === 'rentDueDate' ? 1 : null"
+                                [attr.inputmode]="field.name === 'rentDueDate' ? 'numeric' : null"
+                                [class.is-invalid]="hasError(field.name)" />
+                            } @else {
+                            <select class="form-select" [formControlName]="field.name"
+                                [class.is-invalid]="hasError(field.name)">
+                                <option value="" disabled>Select {{ field.label }}</option>
+                                @for (o of field.options; track o) {
+                                <option [value]="o">{{ o }}</option>
+                                }
+                            </select>
+                            }
+
+                            <div class="invalid-feedback">
+                                {{ getError(field.name) }}
+                            </div>
+                        </div>
+                        }
+                    </div>
+                </div>
+                }
+
+                <!-- Other Details -->
+                <div class="col-md-12">
+                    <label class="form-label fw-semibold">Other Details</label>
+                    <textarea class="form-control" formControlName="otherDetails" rows="3"
+                        placeholder="Add any special terms, notes, or exceptions for this deed"></textarea>
+                    <div class="form-text">Use this section for deed-specific notes that are not part of the shared property setup.</div>
+                </div>
+            </div>
+
+            <div class="mt-4 text-end">
+                <button cButton color="success" type="submit">{{ isEditMode ? 'Update' : 'Create' }}</button>
+                <button cButton color="secondary" type="button" (click)="toggleModal()">Cancel</button>
+            </div>
+        </form>
+    </c-modal-body>
+</c-modal>
+
+<app-confirm-modal [(visible)]="confirmModalVisible" title="Delete Rent Deed"
+    [message]="'Are you sure you want to delete agreement #' + deedToDelete?.agreement_number + '?'"
+    (onConfirm)="deleteDeed()">
+</app-confirm-modal>
+
+<app-confirm-modal [(visible)]="subscriptionConfirmVisible" title="Schedule Subscription Cancellation"
+    [message]="'Schedule automatic rent payment cancellation for ' + deedForSubscriptionCancel?.property?.property_name + ' at the end of the current month?'"
+    (onConfirm)="confirmSubscriptionCancel()">
+</app-confirm-modal>

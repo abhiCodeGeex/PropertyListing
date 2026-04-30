@@ -1,0 +1,140 @@
+:host ::ng-deep c-modal-body {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+
+button[cButton]+button[cButton] {
+    margin-left: 0.5rem;
+}
+
+c-modal-header {
+    border-bottom: none;
+}
+
+/* ng-select sizing is global in _forms.scss */
+
+.deed-detail-panel {
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+}
+
+.deed-detail-panel__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.deed-detail-panel__eyebrow {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 0.35rem;
+}
+
+.deed-detail-panel__title {
+    margin: 0;
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.deed-detail-panel__subtitle {
+    margin: 0.45rem 0 0;
+    color: #475569;
+}
+
+.deed-detail-panel__badges {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.deed-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.deed-detail-card {
+    padding: 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 1rem;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+}
+
+.deed-detail-card__title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 0.9rem;
+}
+
+.deed-detail-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem 1rem;
+}
+
+.deed-detail-list > div {
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.deed-detail-list > div span {
+    display: block;
+    margin-bottom: 0.2rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: #64748b;
+}
+
+.deed-detail-list > div strong {
+    display: block;
+    color: #0f172a;
+    font-weight: 600;
+    white-space: pre-wrap;
+}
+
+.deed-detail-list__wide {
+    grid-column: 1 / -1;
+}
+
+.deed-detail-panel__empty {
+    margin-top: 1rem;
+    padding: 0.95rem 1rem;
+    border-radius: 0.9rem;
+    background: rgba(148, 163, 184, 0.12);
+    color: #475569;
+    font-weight: 500;
+}
+
+@media (max-width: 991.98px) {
+    .deed-detail-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .deed-detail-panel {
+        padding: 1rem;
+    }
+
+    .deed-detail-panel__header {
+        flex-direction: column;
+    }
+
+    .deed-detail-panel__badges {
+        justify-content: flex-start;
+    }
+
+    .deed-detail-list {
+        grid-template-columns: 1fr;
+    }
+}

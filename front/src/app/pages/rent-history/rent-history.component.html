@@ -1,0 +1,113 @@
+<div class="container-fluid workspace-page">
+    <div class="surface-panel toolbar-panel">
+        <div class="toolbar-header">
+            <div class="toolbar-title">
+                <h5>Rent History</h5>
+                <p>Monitor transaction status, payment mode, and failure reasons with a cleaner audit surface.</p>
+            </div>
+
+            <div class="toolbar-actions">
+                <div class="search-control">
+                    <input type="text" class="form-control" placeholder="Search payments" [(ngModel)]="searchTerm"
+                        (ngModelChange)="onSearchChange($event)" />
+                    <span class="search-icon">
+                        <c-icon name="cil-magnifying-glass"></c-icon>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="enterprise-table-shell">
+        <div class="table-responsive">
+            <app-loader [loading]="loading"></app-loader>
+
+            @if(!loading) {
+            <table cTable class="table table-hover align-middle enterprise-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Property</th>
+
+                        @if (canViewTenantColumn()) {
+                        <th>Tenant</th>
+                        }
+
+                        <th>Type</th>
+                        <th>Rent Month</th>
+                        <th>Amount</th>
+                        <th>Payment Mode</th>
+                        <th>Status</th>
+                        <th>Reason</th>
+                        <th>Paid At</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @for (p of payments; track p.id) {
+                    <tr>
+                        <td><span class="row-index">{{ (page - 1) * perPage + $index + 1 }}</span></td>
+                        <td class="table-cell-strong">{{ p.propertyName }}</td>
+
+                        @if (canViewTenantColumn()) {
+                        <td class="table-cell-soft">{{ p.tenantName }}</td>
+                        }
+
+                        <td><span class="soft-pill soft-pill--primary">{{ p.type }}</span></td>
+                        <td class="table-cell-soft">{{ p.month ?? 'N/A' }}</td>
+                        <td class="table-cell-strong">{{ formatCurrency(p.amount) }}</td>
+                        <td>{{ p.paymentMode | uppercase }}</td>
+
+                        <td>
+                            <span class="badge px-2 py-1" [ngClass]="getStatusClass(p.status)">
+                                {{ p.status | uppercase }}
+                            </span>
+                        </td>
+
+                        <td class="reason-cell">
+                            <span class="reason-text" [title]="p.failureReason || ''">
+                                {{ p.failureReason || '-' }}
+                            </span>
+                        </td>
+
+                        <td>{{ p.paid_on | date:'medium' }}</td>
+                    </tr>
+                    }
+
+                    @if (!loading && payments.length === 0) {
+                    <tr>
+                        <td colspan="10" class="text-center py-4">
+                            <div class="empty-state-panel my-3">
+                                <div class="empty-state-icon">
+                                    <c-icon name="cil-wallet"></c-icon>
+                                </div>
+                                <div class="fw-semibold mb-1">No rent history found</div>
+                                <div>Completed and failed payment records will appear here.</div>
+                            </div>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+            }
+        </div>
+    </div>
+
+    <div class="page-pagination">
+        <c-pagination align="center">
+            <li cPageItem [disabled]="page === 1">
+                <a cPageLink (click)="pageChanged(page - 1)">Previous</a>
+            </li>
+
+            @for(p of pages; track p) {
+            <li cPageItem [class.active]="page === p">
+                <a cPageLink (click)="pageChanged(p)">{{ p }}</a>
+            </li>
+            }
+
+            <li cPageItem [disabled]="page === totalPages">
+                <a cPageLink (click)="pageChanged(page + 1)">Next</a>
+            </li>
+        </c-pagination>
+    </div>
+</div>

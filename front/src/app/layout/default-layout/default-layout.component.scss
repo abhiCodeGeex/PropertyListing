@@ -1,0 +1,156 @@
+:host::ng-deep {
+  .sidebar {
+    background:
+      radial-gradient(circle at top left, rgba(59, 130, 246, 0.08), transparent 24%),
+      linear-gradient(180deg, #1e2432 0%, #202736 52%, #1c2230 100%);
+    border-color: rgba(148, 163, 184, 0.14) !important;
+  }
+
+  .sidebar-header,
+  .sidebar-footer {
+    border-color: rgba(148, 163, 184, 0.12) !important;
+    background: transparent;
+  }
+
+  .sidebar-brand-shell {
+    padding: 0.85rem 0.8rem 0.75rem;
+  }
+
+  .sidebar-brand-link {
+    width: 100%;
+    text-decoration: none;
+  }
+
+  .sidebar-brand-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 4.1rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: 18px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95));
+    border: 1px solid rgba(226, 232, 240, 0.96);
+    box-shadow:
+      0 14px 24px rgba(15, 23, 42, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.84);
+  }
+
+  .sidebar-brand-logo {
+    width: 100%;
+    max-width: 10.8rem;
+    height: auto;
+    object-fit: contain;
+    display: block;
+    filter: drop-shadow(0 6px 10px rgba(15, 23, 42, 0.08));
+  }
+
+  .ng-scrollbar {
+    --scrollbar-padding: 1px;
+    --scrollbar-size: 5px;
+    --scrollbar-thumb-color: var(--cui-gray-500, #aab3c5);
+    --scrollbar-thumb-hover-color: var(--cui-gray-400, #cfd4de);
+    --scrollbar-hover-size: calc(var(--scrollbar-size) * 1.5);
+    --scrollbar-border-radius: 5px;
+  }
+
+  .ng-scroll-content {
+    display: flex;
+    min-height: 100%;
+  }
+
+  .sidebar-nav {
+    padding: 0.7rem 0.6rem 1rem;
+  }
+
+  .sidebar-nav .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-height: 3rem;
+    margin-bottom: 0.3rem;
+    padding: 0.8rem 0.95rem;
+    border-radius: 16px;
+    color: rgba(241, 245, 249, 0.9);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition:
+      background-color 0.16s ease,
+      transform 0.16s ease,
+      box-shadow 0.16s ease,
+      color 0.16s ease;
+  }
+
+  .sidebar-nav .nav-link .nav-icon {
+    width: 1.15rem;
+    height: 1.15rem;
+    margin: 0;
+    color: rgba(191, 219, 254, 0.78);
+    transition: color 0.16s ease, transform 0.16s ease;
+  }
+
+  .sidebar-nav .nav-link:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+    transform: translateX(2px);
+  }
+
+  .sidebar-nav .nav-link:hover .nav-icon {
+    color: #93c5fd;
+    transform: scale(1.04);
+  }
+
+  .sidebar-nav .nav-link.active {
+    background:
+      linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(99, 102, 241, 0.18)),
+      rgba(255, 255, 255, 0.04);
+    color: #ffffff;
+    box-shadow:
+      inset 0 0 0 1px rgba(96, 165, 250, 0.22),
+      0 12px 22px rgba(15, 23, 42, 0.18);
+  }
+
+  .sidebar-nav .nav-link.active .nav-icon {
+    color: #bfdbfe;
+  }
+
+  .sidebar-nav .nav-group-toggle::after {
+    color: rgba(226, 232, 240, 0.64);
+  }
+
+  .sidebar-footer .sidebar-toggler {
+    color: rgba(226, 232, 240, 0.88);
+  }
+}
+
+// ng-scrollbar css variables
+//.cui-scrollbar {
+//  --scrollbar-border-radius: 7px;
+//  --scrollbar-padding: 1px;
+//  --scrollbar-viewport-margin: 0;
+//  --scrollbar-track-color: transparent;
+//  --scrollbar-wrapper-color: transparent;
+//  --scrollbar-thumb-color: rgba(0, 0, 0, 0.2);
+//  --scrollbar-thumb-hover-color: var(--scrollbar-thumb-color);
+//  --scrollbar-size: 5px;
+//  --scrollbar-hover-size: var(--scrollbar-size);
+//  --scrollbar-thumb-transition: height ease-out 150ms, width ease-out 150ms;
+//  --scrollbar-track-transition: height ease-out 150ms, width ease-out 150ms;
+//}
+
+@media (max-width: 991.98px) {
+  :host::ng-deep {
+    .sidebar-brand-shell {
+      padding: 0.8rem 0.7rem 0.7rem;
+    }
+
+    .sidebar-brand-card {
+      min-height: 3.8rem;
+      border-radius: 16px;
+    }
+
+    .sidebar-nav {
+      padding-inline: 0.5rem;
+    }
+  }
+}

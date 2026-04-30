@@ -1,0 +1,136 @@
+<div class="container-fluid workspace-page">
+  <div class="surface-panel toolbar-panel">
+    <div class="toolbar-header">
+      <div class="toolbar-title">
+        <h5>Commission Settings</h5>
+        <p>Set Stripe payout splits for owners and property managers without affecting manual payment approvals.</p>
+      </div>
+
+      <div class="toolbar-actions">
+        <div class="search-control">
+          <input type="text" class="form-control" placeholder="Search by property, owner, or manager"
+            [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()" />
+          <span class="search-icon">
+            <c-icon name="cil-magnifying-glass"></c-icon>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <app-loader [loading]="loading"></app-loader>
+
+  @if (!loading) {
+  <div class="enterprise-table-shell">
+    <div class="table-responsive">
+      <table cTable [striped]="true" class="align-middle enterprise-table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Payment Mode</th>
+            <th>Owner</th>
+            <th>Manager</th>
+            <th>Owner %</th>
+            <th>Manager %</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (properties.length > 0) {
+          @for (property of properties; track property.id) {
+          <tr>
+            <td>
+              <div class="table-cell-strong">{{ property.property_name }}</div>
+              <div class="table-cell-soft">{{ property.city }}, {{ property.state }}</div>
+            </td>
+            <td>
+              <span class="soft-pill" [class.soft-pill--primary]="property.payment_mode === 'Credit/Debit Cards'"
+                [class.soft-pill--neutral]="property.payment_mode !== 'Credit/Debit Cards'">
+                {{ property.payment_mode }}
+              </span>
+            </td>
+            <td>
+              <div class="table-cell-strong">{{ property.owner?.name || '-' }}</div>
+              <div [class]="connectReady(property.owner) ? 'soft-pill soft-pill--success' : 'soft-pill soft-pill--warning'">
+                {{ connectStatusLabel(property.owner, 'owner') }}
+              </div>
+            </td>
+            <td>
+              <div class="table-cell-strong">{{ property.manager?.name || 'Not assigned' }}</div>
+              <div [class]="connectReady(property.manager) ? 'soft-pill soft-pill--success' : 'soft-pill soft-pill--neutral'">
+                {{ connectStatusLabel(property.manager, 'manager') }}
+              </div>
+            </td>
+            <td>{{ property.owner_commission_percent }}%</td>
+            <td>{{ property.manager_commission_percent }}%</td>
+            <td>
+              <button cButton color="warning" size="sm" class="interactive-icon-btn" (click)="openModal(property)">
+                <c-icon name="cil-pencil" size="sm"></c-icon>
+              </button>
+            </td>
+          </tr>
+          }
+          } @else {
+          <tr>
+            <td colspan="7" class="text-center">
+              <div class="empty-state-panel my-3">
+                <div class="fw-semibold mb-1">No properties found</div>
+                <div>Adjust the search term and try again.</div>
+              </div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="page-pagination">
+    <c-pagination align="center" aria-label="Page navigation">
+      <li cPageItem [disabled]="page === 1">
+        <a cPageLink (click)="pageChanged(page - 1)">Previous</a>
+      </li>
+
+      @for (p of pages; track p) {
+      <li cPageItem [class.active]="page === p">
+        <a cPageLink (click)="pageChanged(p)">{{ p }}</a>
+      </li>
+      }
+
+      <li cPageItem [disabled]="page === totalPages">
+        <a cPageLink (click)="pageChanged(page + 1)">Next</a>
+      </li>
+    </c-pagination>
+  </div>
+  }
+</div>
+
+<c-modal [visible]="modalVisible" (visibleChange)="modalVisible = $event" backdrop="static">
+  <c-modal-header>
+    <h5 cModalTitle>Update Commission</h5>
+    <button cButtonClose (click)="closeModal()"></button>
+  </c-modal-header>
+
+  <c-modal-body>
+    <form [formGroup]="form" (ngSubmit)="save()">
+      <div class="mb-3">
+        <label class="form-label required-label">Owner Commission %</label>
+        <input type="number" min="0" max="100" step="0.01" class="form-control"
+          formControlName="owner_commission_percent" [class.is-invalid]="isInvalid('owner_commission_percent')" />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label required-label">Manager Commission %</label>
+        <input type="number" min="0" max="100" step="0.01" class="form-control"
+          formControlName="manager_commission_percent" [class.is-invalid]="isInvalid('manager_commission_percent')" />
+        <div class="form-text">The remaining percentage stays on the platform. Manual payments are not affected.</div>
+      </div>
+
+      <div class="text-end">
+        <button cButton color="success" type="submit">Save</button>
+        &nbsp;
+        <button cButton color="secondary" type="button" (click)="closeModal()">Cancel</button>
+      </div>
+    </form>
+  </c-modal-body>
+</c-modal>

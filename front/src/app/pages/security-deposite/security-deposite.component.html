@@ -1,0 +1,31 @@
+<c-modal [visible]="isModalVisible" (visibleChange)="onVisibleChange($event)" alignment="center" backdrop="static" size="lg">
+  <c-modal-header>
+    <h5 class="modal-title">Pay Security {{ formatCurrency(security) }}</h5>
+    <button class="btn-close" (click)="close()"></button>
+  </c-modal-header>
+
+  <c-modal-body class="position-relative">
+    @if (loading) {
+    <div class="payment-progress-overlay" aria-live="polite" aria-busy="true">
+      <div class="payment-progress-overlay__spinner"></div>
+      <div class="payment-progress-overlay__title">Processing payment</div>
+      <div class="payment-progress-overlay__text">{{ processingLabel }}</div>
+    </div>
+    }
+
+    <div #cardElementRef class="form-control p-3 stripe-card-host"></div>
+
+    @if(message){
+    <div class="alert alert-info mt-3">
+      {{ message }}
+    </div>
+    }
+  </c-modal-body>
+
+  <c-modal-footer>
+    <button cButton color="secondary" (click)="close()" [disabled]="loading">Cancel</button>
+    <button cButton color="success" (click)="payByStripe()" [disabled]="loading || !stripeReady || !cardComplete">
+      {{ loading ? 'Processing...' : 'Pay Security' }}
+    </button>
+  </c-modal-footer>
+</c-modal>

@@ -1,0 +1,114 @@
+.message-input {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.message-input__attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.message-input__attachment-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid #dbe3ef;
+  border-radius: 999px;
+  background: #f8fbff;
+  font-size: 0.85rem;
+}
+
+.message-input__attachment-pill button {
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.message-input__row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.75rem;
+  align-items: end;
+  padding: 0.45rem;
+  border: 1px solid #dbe4ef;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+}
+
+.message-input__file-button {
+  position: relative;
+  overflow: hidden;
+  margin: 0;
+}
+
+.message-input__file-button input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.message-input__file-button span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 84px;
+  height: 46px;
+  padding: 0 1rem;
+  border-radius: 0.8rem;
+  border: 1px solid #cfd8e5;
+  background: #ffffff;
+  color: #334155;
+  font-weight: 600;
+}
+
+.message-input__textarea {
+  min-height: 46px;
+  max-height: 144px;
+  resize: vertical;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  padding: 0.7rem 0.35rem;
+}
+
+.message-input__textarea:focus {
+  box-shadow: none;
+}
+
+.message-input__send {
+  min-width: 96px;
+  height: 46px;
+  border-radius: 0.8rem;
+}
+
+@media (max-width: 767.98px) {
+  .message-input__row {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "textarea textarea"
+      "attach send";
+    align-items: stretch;
+  }
+
+  .message-input__file-button {
+    grid-area: attach;
+  }
+
+  .message-input__file-button span,
+  .message-input__send {
+    width: 100%;
+  }
+
+  .message-input__textarea {
+    grid-area: textarea;
+  }
+
+  .message-input__send {
+    grid-area: send;
+  }
+}

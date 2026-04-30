@@ -1,0 +1,64 @@
+<div class="comments-shell">
+  <div class="comment-card" *ngFor="let comment of comments">
+    <div class="comment-card__header">
+      <div>
+        <div class="fw-semibold">{{ comment.user?.name || 'User' }}</div>
+        <div class="text-body-secondary small">{{ comment.user?.email }}</div>
+      </div>
+      <div class="text-body-secondary small">{{ formatTimestamp(comment.created_at) }}</div>
+    </div>
+
+    <p class="comment-card__body">{{ comment.body }}</p>
+
+    <div class="comment-card__attachments" *ngIf="comment.attachments?.length">
+      <button
+        type="button"
+        class="btn btn-sm btn-outline-secondary"
+        *ngFor="let attachment of comment.attachments"
+        (click)="downloadAttachment(attachment)"
+      >
+        {{ attachment.original_name }}
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="!comments.length" class="comments-empty-state">
+    No comments yet.
+  </div>
+
+  <div class="comment-form" *ngIf="!readOnly">
+    <div class="comment-form__header">
+      <div class="comment-form__title">Add Comment</div>
+      <div class="comment-form__caption">Post updates, clarify details, or confirm the resolution.</div>
+    </div>
+
+    <textarea
+      class="form-control comment-form__textarea"
+      rows="4"
+      [(ngModel)]="body"
+      name="comment_body"
+      [disabled]="submitting"
+      placeholder="Share an update, request clarification, or confirm completion."
+    ></textarea>
+
+    <input type="file" class="form-control" multiple [disabled]="submitting" (change)="onFileChange($event)" />
+
+    <div class="comment-form__attachments" *ngIf="selectedFiles.length">
+      <button
+        type="button"
+        class="btn btn-sm btn-light"
+        *ngFor="let file of selectedFiles; let index = index"
+        [disabled]="submitting"
+        (click)="removeFile(index)"
+      >
+        {{ file.name }} <span class="text-body-secondary">remove</span>
+      </button>
+    </div>
+
+    <div class="comment-form__actions">
+      <button class="btn btn-primary" type="button" [disabled]="submitting" (click)="submitComment()">
+        {{ submitting ? 'Sending...' : 'Post Comment' }}
+      </button>
+    </div>
+  </div>
+</div>

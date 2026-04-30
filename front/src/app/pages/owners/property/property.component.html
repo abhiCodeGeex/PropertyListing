@@ -1,0 +1,365 @@
+<div class="container-fluid workspace-page">
+    <div class="surface-panel toolbar-panel">
+        <div class="toolbar-header">
+            <div class="toolbar-title">
+                <h5>Properties</h5>
+                <p>Review occupancy, rent setup, and operating ownership from one place.</p>
+            </div>
+
+            <div class="toolbar-actions">
+                <div class="search-control">
+                    <input type="text" class="form-control" placeholder="Search by property name or type"
+                        [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange($event)" />
+                    <span class="search-icon">
+                        <c-icon name="cil-magnifying-glass"></c-icon>
+                    </span>
+                </div>
+
+                @if (canCreateProperty()) {
+                <button cButton color="primary" class="enterprise-btn-primary d-flex align-items-center gap-2"
+                    (click)="openCreateModal()">
+                    <c-icon name="cil-plus"></c-icon>
+                    Add Property
+                </button>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="card-grid">
+        @if (properties.length > 0) {
+
+        @for (property of properties; track property.id; let i = $index) {
+            <div class="entity-card property-entity-card">
+                <div class="entity-card__header">
+                    <div>
+                        <h5 class="entity-card__title">{{ property.propertyName }}</h5>
+                        <p class="entity-card__subtitle">{{ property.state }}, {{ property.city }}</p>
+                    </div>
+                    <span class="soft-pill soft-pill--primary">{{ property.propertyType }}</span>
+                </div>
+
+                <div class="entity-card__stack">
+                    <div class="entity-card__meta">
+                        <div>
+                            <div class="entity-card__meta-label">Monthly Rent</div>
+                            <div class="entity-card__meta-value">{{ formatCurrency(property.monthlyRent) }}</div>
+                        </div>
+                        <div class="metric-chip">{{ property.paymentMode }}</div>
+                    </div>
+
+                    <div>
+                        <div class="entity-card__meta-label mb-2">Manager</div>
+                        @if (property.manager?.name) {
+                        <span class="soft-pill soft-pill--primary">{{ property?.manager?.name }}</span>
+                        } @else {
+                        <span class="soft-pill soft-pill--neutral">Not Assigned</span>
+                        }
+                    </div>
+
+                    <div>
+                        <div class="entity-card__meta-label mb-2">Tenants</div>
+                        <div class="entity-card__badges">
+                            @if (property.tenants?.length) {
+                            @for (t of property.tenants; track t.id) {
+                            <span class="soft-pill soft-pill--success">{{ t.name }}</span>
+                            }
+                            } @else {
+                            <span class="soft-pill soft-pill--neutral">Vacant</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="entity-card__footer d-flex justify-content-between align-items-center">
+                    <div class="entity-card__actions">
+                        @if (canManageProperty(property)) {
+                        <button cButton color="warning" size="sm" class="interactive-icon-btn"
+                            (click)="openEditModal(property)">
+                                <c-icon name="cil-pencil" size="sm" class="me-1"></c-icon>
+                        </button>
+
+                        <button cButton color="danger" size="sm" class="interactive-icon-btn"
+                            (click)="confirmDelete(property)">
+                                <c-icon name="cil-trash" size="sm" class="me-1"></c-icon>
+                        </button>
+                        }
+                    </div>
+
+                    <div class="dropdown dropdown-up">
+                            <button cButton color="secondary" size="sm" class="rounded-pill px-3"
+                                (click)="toggleDropdown(property.id)">
+                                More
+                            </button>
+
+                            <ul class="dropdown-menu dropdown-menu-end shadow"
+                                [class.show]="isDropdownOpen(property.id)">
+                                <li>
+                                    <button class="dropdown-item"
+                                        (click)="openAssignTenantModal(property.id); closeDropdown()">
+                                        Assign Tenant
+                                    </button>
+                                </li>
+
+                                @if (canAssignManager()) {
+                                <li>
+                                    <button class="dropdown-item"
+                                        (click)="managerAssignModal.openAssignManagerModal(property.id, property.manager_id); closeDropdown()">
+                                        Assign Manager
+                                    </button>
+                                </li>
+                                }
+
+                                <li>
+                                    <button class="dropdown-item" (click)="viewRentDeed(property.id); closeDropdown()">
+                                        View Rent Deed
+                                    </button>
+                                </li>
+
+                                <li>
+                                    <button class="dropdown-item"
+                                        (click)="viewPaymentHistory(property.id); closeDropdown()">
+                                        Payment History
+                                    </button>
+                                </li>
+                            </ul>
+                    </div>
+                </div>
+            </div>
+        }
+
+        } @else {
+        <div class="empty-state-panel">
+            <div class="empty-state-icon">
+                <c-icon name="cil-home"></c-icon>
+            </div>
+            <div class="fw-semibold mb-1">No properties found</div>
+            <div>Try a different search or add your first property.</div>
+        </div>
+        }
+    </div>
+
+
+    <div class="page-pagination">
+        <c-pagination align="center" aria-label="Page navigation">
+            <li cPageItem [disabled]="page === 1">
+                <a cPageLink (click)="pageChanged(page - 1)">Previous</a>
+            </li>
+            <li cPageItem *ngFor="let p of pages" [class.active]="page === p">
+                <a cPageLink (click)="pageChanged(p)">{{ p }}</a>
+            </li>
+            <li cPageItem [disabled]="page === totalPages">
+                <a cPageLink (click)="pageChanged(page + 1)">Next</a>
+            </li>
+        </c-pagination>
+    </div>
+</div>
+
+
+<!-- Property Modal -->
+<c-modal [visible]="propertyModalVisible" (visibleChange)="handleModalChange($event)" backdrop="static" size="lg">
+    <c-modal-header>
+        <h5 cModalTitle>{{ isEditMode ? 'Edit Property' : 'Add Property' }}</h5>
+        <button cButtonClose (click)="toggleModal()"></button>
+    </c-modal-header>
+
+    <c-modal-body>
+        <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+            <div class="row">
+
+                <!-- Property Name -->
+                <div class="mb-3 col-md-6">
+                    <label class="required-label">Property Name</label>
+                    <input formControlName="propertyName" class="form-control" placeholder="Enter a short property title"
+                        [ngClass]="{ 'is-invalid': isInvalid('propertyName') }" />
+                    <div class="form-text">Use the name tenants and managers will recognize easily.</div>
+
+                    @if (isInvalid('propertyName')) {
+                    <div class="invalid-feedback">{{ getErrorMessage('propertyName') }}</div>
+                    }
+                </div>
+
+                <!-- Property Type -->
+                <div class="mb-3 col-md-6">
+                    <label class="required-label">Property Type</label>
+                    <select cSelect formControlName="propertyType" class="form-control"
+                        [ngClass]="{ 'is-invalid': isInvalid('propertyType') }">
+                        <option value="" disabled>Select property type</option>
+                        @for (type of propertyTypes; track type) {
+                        <option [value]="type">{{ type }}</option>
+                        }
+                    </select>
+
+                    @if (isInvalid('propertyType')) {
+                    <div class="invalid-feedback">{{ getErrorMessage('propertyType') }}</div>
+                    }
+                </div>
+
+                <!-- State -->
+                <div class="mb-3 col-md-6">
+                    <label class="required-label">State</label>
+                    <input formControlName="state" class="form-control" placeholder="Enter state"
+                        [ngClass]="{ 'is-invalid': isInvalid('state') }" />
+
+                    @if (isInvalid('state')) {
+                    <div class="invalid-feedback">{{ getErrorMessage('state') }}</div>
+                    }
+                </div>
+
+                <!-- City -->
+                <div class="mb-3 col-md-6">
+                    <label class="required-label">City</label>
+                    <input formControlName="city" class="form-control" placeholder="Enter city"
+                        [ngClass]="{ 'is-invalid': isInvalid('city') }" />
+
+                    @if (isInvalid('city')) {
+                    <div class="invalid-feedback">{{ getErrorMessage('city') }}</div>
+                    }
+                </div>
+
+                <!-- Address -->
+                <div class="mb-3 col-md-12">
+                    <label class="required-label">Address</label>
+                    <textarea formControlName="address" class="form-control"
+                        placeholder="Enter full property address"
+                        [ngClass]="{ 'is-invalid': isInvalid('address') }"></textarea>
+                    <div class="form-text">Include street, area, and any landmark tenants may need.</div>
+
+                    @if (isInvalid('address')) {
+                    <div class="invalid-feedback">{{ getErrorMessage('address') }}</div>
+                    }
+                </div>
+
+                <!-- Monthly Rent -->
+                <div class="mb-3 col-md-6">
+                    <label class="required-label">Monthly Rent</label>
+                    <input type="number" formControlName="monthlyRent" class="form-control" placeholder="Enter monthly rent amount"
+                        min="0" step="0.01" inputmode="decimal"
+                        [ngClass]="{ 'is-invalid': isInvalid('monthlyRent') }" />
+
+                    @if (isInvalid('monthlyRent')) {
+                    <div class="invalid-feedback">{{ getErrorMessage('monthlyRent') }}</div>
+                    }
+                </div>
+
+                <!-- Payment Mode -->
+                <div class="mb-3 col-md-6">
+                    <label class="required-label">Mode of Payment</label>
+                    <select cSelect formControlName="paymentMode" class="form-select"
+                        [ngClass]="{ 'is-invalid': isInvalid('paymentMode') }">
+                        <option value="" disabled>Select payment mode</option>
+                        @for (mode of paymentModes; track mode) {
+                        <option [value]="mode">{{ mode }}</option>
+                        }
+                    </select>
+
+                    @if (isInvalid('paymentMode')) {
+                    <div class="invalid-feedback">{{ getErrorMessage('paymentMode') }}</div>
+                    }
+                    <div class="form-text">Choose card payments for Stripe checkout, otherwise tenants will use manual notify.</div>
+                </div>
+
+                <!-- Security Amount -->
+                <div class="mb-3 col-md-6">
+                    <label class="required-label">Security Amount</label>
+                    <input type="number" formControlName="securityAmount" class="form-control" placeholder="Enter security deposit amount"
+                        min="0" step="0.01" inputmode="decimal"
+                        [ngClass]="{ 'is-invalid': isInvalid('securityAmount') }" />
+
+                    @if (isInvalid('securityAmount')) {
+                    <div class="invalid-feedback">{{ getErrorMessage('securityAmount') }}</div>
+                    }
+                </div>
+
+                <div class="mb-3 col-md-6">
+                    <label>Refund Terms</label>
+                    <textarea formControlName="refundTerms" class="form-control"
+                        placeholder="Describe when and how the deposit is refunded"
+                        [ngClass]="{ 'is-invalid': isInvalid('refundTerms') }"></textarea>
+
+                    @if (isInvalid('refundTerms')) {
+                    <div class="invalid-feedback">{{ getErrorMessage('refundTerms') }}</div>
+                    }
+                </div>
+
+                <div class="mb-3 col-md-6">
+                    <label>Agreement Duration</label>
+                    <input formControlName="agreementDuration" class="form-control" placeholder="Example: 11 months"
+                        [ngClass]="{ 'is-invalid': isInvalid('agreementDuration') }" />
+
+                    @if (isInvalid('agreementDuration')) {
+                    <div class="invalid-feedback">{{ getErrorMessage('agreementDuration') }}</div>
+                    }
+                </div>
+
+                <div class="mb-3 col-md-6">
+                    <label>Maintenance Responsibilities</label>
+                    <textarea formControlName="maintenanceResponsibilities" class="form-control"
+                        placeholder="Describe who handles maintenance and repairs"
+                        [ngClass]="{ 'is-invalid': isInvalid('maintenanceResponsibilities') }"></textarea>
+
+                    @if (isInvalid('maintenanceResponsibilities')) {
+                    <div class="invalid-feedback">{{ getErrorMessage('maintenanceResponsibilities') }}</div>
+                    }
+                </div>
+
+                <div class="mb-3 col-md-6">
+                    <label>Termination Clause</label>
+                    <textarea formControlName="terminationClause" class="form-control"
+                        placeholder="Add notice period or termination terms"
+                        [ngClass]="{ 'is-invalid': isInvalid('terminationClause') }"></textarea>
+
+                    @if (isInvalid('terminationClause')) {
+                    <div class="invalid-feedback">{{ getErrorMessage('terminationClause') }}</div>
+                    }
+                </div>
+
+                <div class="mb-3 col-md-6">
+                    <label>Late Payment Penalty</label>
+                    <input formControlName="latePaymentPenalty" class="form-control" placeholder="Example: {{ currencySymbol }} 500 after 5 days"
+                        [ngClass]="{ 'is-invalid': isInvalid('latePaymentPenalty') }" />
+
+                    @if (isInvalid('latePaymentPenalty')) {
+                    <div class="invalid-feedback">{{ getErrorMessage('latePaymentPenalty') }}</div>
+                    }
+                </div>
+
+                <!-- Electricity Bill -->
+                <div class="mb-3 col-md-6">
+                    <label class="required-label">Electricity Bill Paid By</label>
+                    <select cSelect formControlName="electricityBillPaidBy" class="form-select"
+                        [ngClass]="{ 'is-invalid': isInvalid('electricityBillPaidBy') }">
+                        <option value="" disabled>Select who pays the electricity bill</option>
+                        @for (option of electricityPaidByOptions; track option) {
+                        <option [value]="option">{{ option }}</option>
+                        }
+                    </select>
+
+                    @if (isInvalid('electricityBillPaidBy')) {
+                    <div class="invalid-feedback">{{ getErrorMessage('electricityBillPaidBy') }}</div>
+                    }
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="text-end">
+                <button cButton color="success" type="submit">
+                    {{ isEditMode ? 'Update' : 'Create' }}
+                </button>
+                &nbsp;
+                <button cButton color="secondary" type="button" (click)="toggleModal()">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </c-modal-body>
+</c-modal>
+
+<!-- Confirm Modal -->
+<app-confirm-modal [(visible)]="visibleConfirmModal" title="Delete Property"
+    [message]="'Are you sure you want to delete ' + propertyToDelete?.propertyName + '?'"
+    (onConfirm)="deleteProperty()">
+</app-confirm-modal>
+<app-property-tenant-assign (tenantAssigned)="onTenantAssigned()"></app-property-tenant-assign>
+<app-property-manager-assign (managerAssigned)="onManagerAssigned()"></app-property-manager-assign>

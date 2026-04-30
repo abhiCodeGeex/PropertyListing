@@ -1,0 +1,154 @@
+@if (!chat) {
+  <section class="chat-window chat-window--empty">
+    <div class="chat-window__empty-state">
+      <h3>Select a conversation</h3>
+      <p>Open an existing chat or start a direct conversation from the contact list.</p>
+    </div>
+  </section>
+} @else {
+  <section class="chat-window">
+    <div class="chat-window__top">
+      <header class="chat-window__header">
+        <div class="chat-window__header-main">
+          <div class="chat-window__eyebrow">
+            {{ chat.type === 'group' ? 'Group conversation' : 'Direct conversation' }}
+          </div>
+          <div class="chat-window__title">{{ displayName() }}</div>
+          <div class="chat-window__meta">
+            <span class="chat-window__meta-pill">
+              {{ chat.type === 'group' ? (chat.participants.length + ' members') : (chat.counterpart?.email || 'Direct chat') }}
+            </span>
+
+            @if (chat.property?.property_name) {
+              <span class="chat-window__meta-pill chat-window__meta-pill--accent">
+                {{ chat.property?.property_name }}
+              </span>
+            }
+          </div>
+        </div>
+
+        <div class="chat-window__header-side">
+          @if (typingLabel) {
+            <div class="chat-window__typing">{{ typingLabel }}</div>
+          }
+
+          @if (chat.type === 'group') {
+            <div class="chat-window__actions">
+              <button type="button" class="chat-window__secondary-button" (click)="toggleParticipants()">
+                {{ showParticipants ? 'Hide members' : 'Members' }}
+              </button>
+
+              @if (canManageParticipants) {
+                <button
+                  type="button"
+                  class="chat-window__danger-button"
+                  [disabled]="deletingGroup"
+                  (click)="deleteGroup.emit()"
+                >
+                  {{ deletingGroup ? 'Deleting...' : 'Delete group' }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </header>
+
+      @if (chat.type === 'group' && showParticipants) {
+        <section class="chat-window__participants">
+          <div class="chat-window__participants-header">
+            <div>
+              <div class="chat-window__participants-title">Members</div>
+              <div class="chat-window__participants-caption">
+                {{ canManageParticipants ? 'Manage access for this group conversation.' : 'People in this group conversation.' }}
+              </div>
+            </div>
+            <span class="chat-window__participants-count">{{ chat.participants.length }}</span>
+          </div>
+
+          <div class="chat-window__participants-list">
+            @for (participant of chat.participants; track participant.id) {
+              <div class="chat-window__participant">
+                <div class="chat-window__participant-meta">
+                  <span class="chat-window__participant-name">
+                    {{ participant.id === currentUserId ? 'You' : participant.name }}
+                  </span>
+                  <span class="chat-window__participant-details">{{ participantLabel(participant) }}</span>
+                </div>
+
+                @if (canManageParticipants) {
+                  <button
+                    type="button"
+                    class="chat-window__participant-action"
+                    [disabled]="deletingGroup || isRemovingParticipant(participant.id)"
+                    (click)="removeParticipant.emit(participant.id)"
+                  >
+                    @if (isRemovingParticipant(participant.id)) {
+                      Removing...
+                    } @else {
+                      {{ participant.id === currentUserId ? 'Leave' : 'Remove' }}
+                    }
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </section>
+      }
+    </div>
+
+    <div #viewport class="chat-window__messages" (scroll)="onScroll()">
+      @if (loadingOlder) {
+        <div class="chat-window__status">Loading older messages...</div>
+      }
+
+      @if (loading && messages.length === 0) {
+        <div class="chat-window__status">Loading conversation...</div>
+      } @else if (!loading && messages.length === 0) {
+        <div class="chat-window__status">No messages yet. Start the conversation.</div>
+      } @else {
+        @for (message of messages; track message.id) {
+          <article class="chat-bubble" [class.chat-bubble--mine]="isMine(message)">
+            <div class="chat-bubble__sender">
+              {{ isMine(message) ? 'You' : (message.sender?.name || 'Unknown') }}
+            </div>
+
+            @if (message.message) {
+              <div class="chat-bubble__body">{{ message.message }}</div>
+            }
+
+            @if (message.attachments.length > 0) {
+              <div class="chat-bubble__attachments">
+                @for (attachment of message.attachments; track attachment.id) {
+                  <button
+                    type="button"
+                    class="chat-bubble__attachment"
+                    (click)="download(message.chat_id, attachment)"
+                  >
+                    <span>{{ attachment.original_name }}</span>
+                    <small>{{ attachment.mime_type }}</small>
+                  </button>
+                }
+              </div>
+            }
+
+            <div class="chat-bubble__meta">
+              <span>{{ formatTimestamp(message.timestamp) }}</span>
+              @if (readState(message)) {
+                <span>{{ readState(message) }}</span>
+              }
+            </div>
+          </article>
+        }
+      }
+    </div>
+
+    <footer class="chat-window__footer">
+      <app-message-input
+        [disabled]="loading || deletingGroup"
+        [sending]="sending"
+        (sendMessage)="send.emit($event)"
+        (typing)="typing.emit()"
+      />
+    </footer>
+  </section>
+}

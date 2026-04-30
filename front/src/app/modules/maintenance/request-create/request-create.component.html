@@ -1,0 +1,120 @@
+<c-modal
+  [visible]="visible"
+  (visibleChange)="handleVisibleChange($event)"
+  backdrop="static"
+  size="lg"
+>
+  <c-modal-header>
+    <h5 cModalTitle>Create Maintenance Request</h5>
+    <button cButtonClose (click)="close()" [disabled]="submitting"></button>
+  </c-modal-header>
+
+  <c-modal-body>
+    <p class="text-body-secondary mb-4">Raise an issue for one of your assigned properties.</p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="row g-4 maintenance-request-create" novalidate>
+      <div class="col-lg-6">
+        <label for="property_id" class="form-label fw-semibold">Property</label>
+        <select
+          id="property_id"
+          class="form-select"
+          formControlName="property_id"
+          [disabled]="submitting"
+          (change)="onPropertyChange()"
+        >
+          <option [ngValue]="null">Select property</option>
+          <option *ngFor="let property of properties" [ngValue]="property.property_id">
+            {{ property.property_name }}<span *ngIf="property.city">, {{ property.city }}</span>
+          </option>
+        </select>
+        <div class="form-text" *ngIf="loading">Loading assigned properties...</div>
+        <div class="invalid-feedback d-block" *ngIf="fieldError('property_id')">{{ fieldError('property_id') }}</div>
+      </div>
+
+      <div class="col-lg-6">
+        <label for="priority" class="form-label fw-semibold">Priority</label>
+        <select id="priority" class="form-select" formControlName="priority" [disabled]="submitting">
+          <option *ngFor="let priority of priorities" [value]="priority">
+            {{ priority | titlecase }}
+          </option>
+        </select>
+        <div class="invalid-feedback d-block" *ngIf="fieldError('priority')">{{ fieldError('priority') }}</div>
+      </div>
+
+      <div class="col-12">
+        <label for="title" class="form-label fw-semibold">Issue Title</label>
+        <input
+          id="title"
+          type="text"
+          class="form-control"
+          formControlName="title"
+          [disabled]="submitting"
+          placeholder="Example: Water leakage in kitchen ceiling"
+        />
+        <div class="invalid-feedback d-block" *ngIf="fieldError('title')">{{ fieldError('title') }}</div>
+      </div>
+
+      <div class="col-md-6">
+        <label for="category" class="form-label fw-semibold">Category</label>
+        <input
+          id="category"
+          type="text"
+          class="form-control"
+          formControlName="category"
+          [disabled]="submitting"
+          placeholder="Plumbing, electrical, appliance, other"
+        />
+        <div class="invalid-feedback d-block" *ngIf="fieldError('category')">{{ fieldError('category') }}</div>
+      </div>
+
+      <div class="col-md-6">
+        <label for="attachments" class="form-label fw-semibold">Attachments</label>
+        <input
+          id="attachments"
+          type="file"
+          class="form-control"
+          multiple
+          [disabled]="submitting"
+          (change)="onFileChange($event)"
+        />
+        <div class="form-text">Upload photos, PDFs, or supporting documents up to 10 MB each.</div>
+      </div>
+
+      <div class="col-12" *ngIf="selectedFiles.length">
+        <div class="d-flex flex-wrap gap-2">
+          <button
+            type="button"
+            class="btn btn-sm btn-light attachment-chip"
+            *ngFor="let file of selectedFiles; let index = index"
+            [disabled]="submitting"
+            (click)="removeFile(index)"
+          >
+            {{ file.name }} <span class="text-body-secondary">remove</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <label for="description" class="form-label fw-semibold">Description</label>
+        <textarea
+          id="description"
+          class="form-control"
+          rows="6"
+          formControlName="description"
+          [disabled]="submitting"
+          placeholder="Describe the issue, where it happens, and what you observed."
+        ></textarea>
+        <div class="invalid-feedback d-block" *ngIf="fieldError('description')">{{ fieldError('description') }}</div>
+      </div>
+
+      <div class="col-12 d-flex flex-wrap justify-content-end gap-2">
+        <button type="button" class="btn btn-outline-secondary" (click)="close()" [disabled]="submitting">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="submitting || loading || !properties.length">
+          {{ submitting ? 'Creating...' : 'Create Request' }}
+        </button>
+      </div>
+    </form>
+  </c-modal-body>
+</c-modal>

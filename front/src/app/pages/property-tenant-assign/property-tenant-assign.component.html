@@ -1,0 +1,48 @@
+<c-modal [(visible)]="modalVisible" backdrop="static" size="lg">
+    <c-modal-header>
+        <h5 cModalTitle>Assign Tenants</h5>
+        <button cButtonClose (click)="closeModal()"></button>
+    </c-modal-header>
+
+    <c-modal-body>
+        <form [formGroup]="form" (ngSubmit)="submit()">
+            <input type="hidden" formControlName="propertyId" />
+            <div class="mb-3">
+                <label class="required-label">Tenants</label>
+                <ng-select [items]="tenantsList" bindLabel="name" bindValue="id" [multiple]="false"
+                    placeholder="Select a tenant to assign" formControlName="tenants" [searchable]="true"
+                    [class.is-invalid]="isInvalid('tenants')">
+                    <ng-template ng-label-tmp let-item="item">
+                        {{ item.name }}
+                    </ng-template>
+                    <ng-template ng-option-tmp let-item="item">
+                        {{ item.name }} ({{ item?.profile?.aadhar ? 'Aadhar : ' + item?.profile?.aadhar : 'Email : ' +
+                        item?.email }})
+                    </ng-template>
+                </ng-select>
+                <div class="invalid-feedback d-block">{{ getError('tenants') }}</div>
+                <div class="form-text">Search by tenant name, Aadhaar, or email to find the correct user.</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="required-label">Tenancy Period</label>
+                <mat-form-field appearance="outline" class="w-100">
+                    <mat-date-range-input [rangePicker]="tenancyPicker" [min]="today">
+                        <input matStartDate placeholder="Start date" formControlName="start_date">
+                        <input matEndDate placeholder="End date" formControlName="end_date">
+                    </mat-date-range-input>
+                    <mat-datepicker-toggle matIconSuffix [for]="tenancyPicker"></mat-datepicker-toggle>
+                    <mat-date-range-picker #tenancyPicker></mat-date-range-picker>
+                </mat-form-field>
+                <div class="invalid-feedback d-block" *ngIf="isInvalid('start_date')">{{ getError('start_date') }}</div>
+                <div class="invalid-feedback d-block" *ngIf="isInvalid('end_date')">{{ getError('end_date') }}</div>
+                <div class="form-text">Set the active tenancy window. Leave the end date empty for open-ended occupancy.</div>
+            </div>
+
+            <div class="text-end">
+                <button cButton color="success" type="submit">Assign</button>&nbsp;
+                <button cButton color="secondary" type="button" (click)="closeModal()">Cancel</button>
+            </div>
+        </form>
+    </c-modal-body>
+</c-modal>

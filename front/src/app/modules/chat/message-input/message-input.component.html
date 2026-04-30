@@ -1,0 +1,42 @@
+<div class="message-input">
+  @if (attachments.length > 0) {
+    <div class="message-input__attachments">
+      @for (attachment of attachments; track attachment.name + attachment.size; let i = $index) {
+        <div class="message-input__attachment-pill">
+          <span>{{ attachment.name }}</span>
+          <button type="button" (click)="removeAttachment(i)" [disabled]="disabled || sending">Remove</button>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="message-input__row">
+    <label class="message-input__file-button">
+      <input
+        type="file"
+        multiple
+        (change)="onFileSelection($event)"
+        [disabled]="disabled || sending"
+      />
+      <span>Attach</span>
+    </label>
+
+    <textarea
+      rows="1"
+      class="form-control message-input__textarea"
+      placeholder="Write a message"
+      [(ngModel)]="draft"
+      [disabled]="disabled || sending"
+      (keydown)="handleKeydown($event)"
+    ></textarea>
+
+    <button
+      type="button"
+      class="btn btn-primary message-input__send"
+      [disabled]="disabled || sending || (!draft.trim() && attachments.length === 0)"
+      (click)="submit()"
+    >
+      {{ sending ? 'Sending...' : 'Send' }}
+    </button>
+  </div>
+</div>

@@ -1,0 +1,28 @@
+.dropdown {
+    position: relative;
+}
+
+.dropdown-up .dropdown-menu {
+    position: absolute;
+    bottom: 100%;     /* ⬅️ opens UP */
+    top: auto;
+    right: 0;
+    left: auto;
+    margin-bottom: 0.5rem;
+    z-index: 1050;
+}
+
+
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+.dropdown-item:hover {
+    background-color: rgba(29, 78, 216, 0.08);
+}

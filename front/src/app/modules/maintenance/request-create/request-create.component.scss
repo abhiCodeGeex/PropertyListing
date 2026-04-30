@@ -1,0 +1,17 @@
+.attachment-chip {
+  border: 1px solid #dbe4ef;
+  border-radius: 999px;
+  background: #f8fbff;
+}
+
+.maintenance-request-create :is(.form-control, .form-select) {
+  border-radius: 0.9rem;
+  border-color: #d7e3f2;
+  background: #fbfdff;
+  box-shadow: none;
+}
+
+.maintenance-request-create :is(.form-control, .form-select):focus {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.12);
+}

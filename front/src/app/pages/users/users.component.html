@@ -1,0 +1,240 @@
+<div class="container-fluid workspace-page">
+  <div class="surface-panel toolbar-panel">
+    <div class="toolbar-header">
+      <div class="toolbar-title">
+        <h5>Users</h5>
+        <p>Manage access, navigation rights, and portfolio visibility across the workspace.</p>
+      </div>
+
+      <div class="toolbar-actions">
+        <div class="search-control">
+          <input type="text" class="form-control" placeholder="Search by name or email..." [(ngModel)]="searchTerm"
+            (ngModelChange)="onSearchChange()" />
+          <span class="search-icon">
+            <c-icon name="cil-magnifying-glass"></c-icon>
+          </span>
+        </div>
+
+        <button cButton color="primary" class="enterprise-btn-primary" (click)="openCreateModal()">
+          + Add User
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-chip-bar mt-3">
+      <span class="filter-chip-label">Filter by role</span>
+
+          <label class="filter-chip">
+            <input type="checkbox" (change)="toggleRoleFilter('owner')" />
+            <span>Owner</span>
+          </label>
+
+          <label class="filter-chip">
+            <input type="checkbox" (change)="toggleRoleFilter('tenant')" />
+            <span>Tenant</span>
+          </label>
+
+          <label class="filter-chip">
+            <input type="checkbox" (change)="toggleRoleFilter('property_manager')" />
+            <span>Manager</span>
+          </label>
+
+          <label class="filter-chip">
+            <input type="checkbox" (change)="toggleRoleFilter('super-admin')" />
+            <span>Super Admin</span>
+          </label>
+    </div>
+  </div>
+
+  <app-loader [loading]="loading"></app-loader>
+
+  @if (!loading) {
+  <div class="enterprise-table-shell">
+    <div class="table-responsive">
+      <table cTable [striped]="true" class="align-middle enterprise-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Roles</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @if (users.length > 0) {
+          @for (user of users; track user.id; let i = $index) {
+          <tr>
+            <th scope="row">
+              <span class="row-index">{{ (page - 1) * perPage + i + 1 }}</span>
+            </th>
+
+            <td class="table-cell-strong">{{ user.name }}</td>
+            <td class="table-cell-soft">{{ user.email }}</td>
+
+            <td>
+              @if (user.roleNames.length > 0) {
+              <div class="d-flex flex-wrap gap-2">
+                @for (role of user.roleNames; track role) {
+                <span class="soft-pill soft-pill--primary">
+                  {{ role }}
+                </span>
+                }
+              </div>
+              } @else {
+              <span class="soft-pill soft-pill--neutral">No roles</span>
+              }
+            </td>
+
+            <td>
+              <div class="d-flex flex-wrap gap-2">
+                <button cButton color="warning" size="sm" class="interactive-icon-btn" (click)="openEditModal(user)">
+                  <c-icon name="cil-pencil" size="sm" class="me-1"></c-icon>
+                </button>
+                <button cButton color="danger" size="sm" class="interactive-icon-btn" (click)="confirmDelete(user)">
+                  <c-icon name="cil-trash" size="sm" class="me-1"></c-icon>
+                </button>
+
+                @if (hasPropertyRole(user)) {
+                <button cButton color="info" size="sm" class="interactive-icon-btn" (click)="goToProperties(user)"
+                  title="View Properties">
+                  <c-icon name="cil-home" size="sm"></c-icon>
+                </button>
+                }
+              </div>
+            </td>
+
+          </tr>
+          }
+          } @else {
+          <tr>
+            <td colspan="5" class="text-center">
+              <div class="empty-state-panel my-3">
+                <div class="empty-state-icon">
+                  <c-icon name="cil-user"></c-icon>
+                </div>
+                <div class="fw-semibold mb-1">No users found</div>
+                <div>Adjust filters or create a new user account.</div>
+              </div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="page-pagination">
+      <c-pagination align="center" aria-label="Page navigation">
+        <li cPageItem [disabled]="page === 1">
+          <a cPageLink (click)="pageChanged(page - 1)">Previous</a>
+        </li>
+
+        @for (p of pages; track p) {
+        <li cPageItem [class.active]="page === p">
+          <a cPageLink (click)="pageChanged(p)">{{ p }}</a>
+        </li>
+        }
+
+        <li cPageItem [disabled]="page === totalPages">
+          <a cPageLink (click)="pageChanged(page + 1)">Next</a>
+        </li>
+      </c-pagination>
+  </div>
+  }
+  </div>
+
+<!-- User Modal -->
+<c-modal [visible]="userModalVisible" (visibleChange)="handleModalChange($event)" backdrop="static" size="lg">
+
+  <c-modal-header>
+    <h5 cModalTitle>
+      {{ isEditMode ? 'Edit User' : 'Add New User' }}
+    </h5>
+    <button cButtonClose (click)="toggleModal()"></button>
+  </c-modal-header>
+
+  <c-modal-body>
+    <form [formGroup]="form" (ngSubmit)="submit()">
+
+      <!-- Name -->
+      <div class="mb-3">
+        <label class="form-label required-label">Name</label>
+        <input formControlName="name" class="form-control" placeholder="Enter full name"
+          [class.is-invalid]="isInvalid('name')" />
+
+        @if (isInvalid('name')) {
+        <div class="invalid-feedback d-block">{{ getError('name') }}</div>
+        }
+      </div>
+
+      <!-- Email -->
+      <div class="mb-3">
+        <label class="form-label required-label">Email</label>
+        <input formControlName="email" type="email" class="form-control" placeholder="Enter email address"
+          [class.is-invalid]="isInvalid('email')" />
+        <div class="form-text">This email will be used for sign-in and notifications.</div>
+
+        @if (isInvalid('email')) {
+        <div class="invalid-feedback d-block">{{ getError('email') }}</div>
+        }
+      </div>
+
+      <!-- Password -->
+      @if (!isEditMode) {
+      <div class="mb-3">
+        <label class="form-label required-label">Password</label>
+        <input formControlName="password" type="password" class="form-control" placeholder="Minimum 6 characters"
+          [class.is-invalid]="isInvalid('password')" />
+        <div class="form-text">Use a strong temporary password the user can change later.</div>
+
+        @if (isInvalid('password')) {
+        <div class="invalid-feedback d-block">{{ getError('password') }}</div>
+        }
+      </div>
+      }
+
+      <!-- Roles -->
+      <div class="mb-3">
+        <label class="form-label required-label">Roles</label>
+
+        <ng-select class="w-100" [items]="roles" bindLabel="name" bindValue="id" [multiple]="true" [searchable]="true"
+          placeholder="Select one or more roles" formControlName="roles" [class.is-invalid]="isInvalid('roles')">
+
+          <ng-template ng-label-tmp let-item="item">
+            {{ item.name }}
+          </ng-template>
+
+          <ng-template ng-option-tmp let-item="item">
+            {{ item.name }}
+          </ng-template>
+
+        </ng-select>
+        <div class="form-text">Select all roles that should be available to this user.</div>
+
+        @if (isInvalid('roles')) {
+        <div class="invalid-feedback d-block">{{ getError('roles') }}</div>
+        }
+      </div>
+
+      <!-- Buttons -->
+      <div class="text-end">
+        <button cButton color="success" type="submit">
+          {{ isEditMode ? 'Update' : 'Create' }}
+        </button>
+        &nbsp;
+        <button cButton color="secondary" type="button" (click)="toggleModal()">
+          Cancel
+        </button>
+      </div>
+
+    </form>
+  </c-modal-body>
+</c-modal>
+
+
+<!-- Confirm Modal -->
+<app-confirm-modal [(visible)]="visibleConfirmModal" title="Delete User"
+  [message]="'Are you sure you want to delete ' + userToDelete?.name + '?'" (onConfirm)="deleteUser()">
+</app-confirm-modal>

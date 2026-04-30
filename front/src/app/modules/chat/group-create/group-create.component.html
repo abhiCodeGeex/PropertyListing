@@ -1,0 +1,69 @@
+@if (visible) {
+  <div class="chat-modal-backdrop" (click)="close()">
+    <div class="chat-modal" (click)="$event.stopPropagation()">
+      <div class="chat-modal__header">
+        <div>
+          <div class="chat-modal__eyebrow">Group Chat</div>
+          <h3 class="chat-modal__title">Create New Group</h3>
+        </div>
+
+        <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="submitting" (click)="close()">Close</button>
+      </div>
+
+      <div class="chat-modal__body">
+        <div class="mb-3">
+          <label class="form-label">Title</label>
+          <input type="text" class="form-control" [(ngModel)]="title" [disabled]="submitting" placeholder="Team coordination" />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" rows="3" [(ngModel)]="description" [disabled]="submitting" placeholder="Optional context for participants"></textarea>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Property Context</label>
+          <select class="form-select" [(ngModel)]="propertyId" [disabled]="submitting">
+            <option [ngValue]="null">No property selected</option>
+            @for (property of properties; track property.id) {
+              <option [ngValue]="property.id">
+                {{ property.property_name }}{{ property.city ? ' | ' + property.city : '' }}
+              </option>
+            }
+          </select>
+        </div>
+
+        <div class="chat-modal__participants">
+          <div class="chat-modal__participants-head">
+            <div class="chat-modal__participants-title">Participants</div>
+            <span class="chat-modal__participants-count">{{ selectedUserIds.length }}</span>
+          </div>
+
+          <div class="chat-modal__participants-list">
+            @for (user of users; track user.id) {
+              <label class="chat-modal__participant">
+                <input
+                  type="checkbox"
+                  [disabled]="submitting"
+                  [checked]="selectedUserIds.includes(user.id)"
+                  (change)="toggleUser(user.id, $any($event.target).checked)"
+                />
+                <span>
+                  <strong>{{ user.name }}</strong>
+                  <small>{{ user.roles.join(', ') || user.email }}</small>
+                </span>
+              </label>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-modal__footer">
+        <button type="button" class="btn btn-outline-secondary" [disabled]="submitting" (click)="close()">Cancel</button>
+        <button type="button" class="btn btn-primary" [disabled]="submitting" (click)="submit()">
+          {{ submitting ? 'Creating...' : 'Create Group' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

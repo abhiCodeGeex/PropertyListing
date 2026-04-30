@@ -1,0 +1,115 @@
+<div class="container-fluid workspace-page">
+  <div class="surface-panel toolbar-panel">
+    <div class="toolbar-header">
+      <div class="toolbar-title">
+        <h5>Invoices</h5>
+        <p>Review issued invoices, download PDFs, and resend copies when stakeholders need an audit trail.</p>
+      </div>
+
+      <div class="toolbar-actions">
+        <select class="form-select invoice-filter" [(ngModel)]="selectedType" (ngModelChange)="changeType($event)">
+          @for (option of invoiceTypes; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="surface-panel invoice-list-panel">
+    <div class="section-title-row">
+      <div>
+        <h4>Issued Documents</h4>
+        <div class="section-subtitle">{{ statusLabel }}</div>
+      </div>
+    </div>
+
+    <div class="enterprise-table-shell">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle enterprise-table">
+          <thead>
+            <tr>
+              <th>Invoice</th>
+              <th>Property</th>
+              <th>Type</th>
+              <th>Total</th>
+              <th>Issued</th>
+              <th>Delivery</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            @for (invoice of invoices; track invoice.id) {
+              <tr>
+                <td>
+                  <div class="table-cell-strong">{{ invoice.invoice_number }}</div>
+                  <div class="table-cell-soft">{{ invoice.subject }}</div>
+                </td>
+                <td>{{ invoice.billing_snapshot?.property_name || '-' }}</td>
+                <td>
+                  <span class="soft-pill soft-pill--primary">{{ typeLabel(invoice.type) }}</span>
+                </td>
+                <td class="fw-semibold">{{ formatCurrency(invoice.total) }}</td>
+                <td>{{ invoice.issue_date | date:'mediumDate' }}</td>
+                <td>
+                  <span class="soft-pill" [ngClass]="{
+                    'soft-pill--success': invoice.delivery_status === 'sent',
+                    'soft-pill--warning': invoice.delivery_status === 'pending',
+                    'soft-pill--danger': invoice.delivery_status === 'failed'
+                  }">
+                    {{ deliveryLabel(invoice.delivery_status) }}
+                  </span>
+                </td>
+                <td class="text-end">
+                  <div class="d-flex justify-content-end gap-2">
+                    <button class="btn btn-outline-primary btn-sm" (click)="download(invoice)">
+                      Download
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm"
+                      [disabled]="resendingId === invoice.id"
+                      (click)="resend(invoice)">
+                      {{ resendingId === invoice.id ? 'Queuing...' : 'Resend' }}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+
+            @if (!loading && invoices.length === 0) {
+              <tr>
+                <td colspan="7" class="text-center py-4">
+                  <div class="empty-state-panel my-3">
+                    <div class="empty-state-icon">
+                      <i class="bi bi-receipt"></i>
+                    </div>
+                    <div class="fw-semibold mb-1">No invoices available</div>
+                    <div>Issued payment invoices will appear here for tenants, owners, and property managers.</div>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="page-pagination">
+      <nav>
+        <ul class="pagination mb-0">
+          <li class="page-item" [class.disabled]="page === 1">
+            <a class="page-link" (click)="pageChanged(page - 1)">Previous</a>
+          </li>
+          @for (item of [].constructor(totalPages); track $index) {
+            <li class="page-item" [class.active]="page === $index + 1">
+              <a class="page-link" (click)="pageChanged($index + 1)">{{ $index + 1 }}</a>
+            </li>
+          }
+          <li class="page-item" [class.disabled]="page === totalPages">
+            <a class="page-link" (click)="pageChanged(page + 1)">Next</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</div>

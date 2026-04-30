@@ -1,0 +1,57 @@
+<div class="chat-page" [class.chat-page--sidebar-open]="mobileSidebarOpen">
+  <div class="chat-page__overlay" (click)="closeMobileSidebar()"></div>
+
+  <aside class="chat-page__sidebar">
+    <app-chat-list
+      [chats]="chats"
+      [contacts]="contacts"
+      [selectedChatId]="selectedChatId"
+      [loading]="loadingChats"
+      [canCreateGroup]="canCreateGroup"
+      (selectChat)="openChat($event)"
+      (startPrivateChat)="startPrivateChat($event)"
+      (createGroup)="showGroupCreate = true"
+    />
+  </aside>
+
+  <main class="chat-page__content">
+    <div class="chat-page__mobile-toolbar">
+      <button type="button" class="chat-page__mobile-button" (click)="toggleMobileSidebar()">
+        Conversations
+      </button>
+
+      <div class="chat-page__mobile-summary">
+        <div class="chat-page__mobile-label">{{ selectedChat ? 'Active chat' : 'Chat workspace' }}</div>
+        <div class="chat-page__mobile-title">{{ selectedChatName() }}</div>
+      </div>
+    </div>
+
+    <app-chat-window
+      [chat]="selectedChat"
+      [messages]="messages"
+      [loading]="loadingMessages"
+      [loadingOlder]="loadingOlder"
+      [sending]="sending"
+      [hasMore]="hasMoreMessages"
+      [currentUserId]="currentUserId()"
+      [typingLabel]="typingLabel"
+      [canManageParticipants]="canManageSelectedGroup()"
+      [deletingGroup]="deletingGroup"
+      [removingParticipantIds]="removingParticipantIds"
+      (loadOlder)="loadOlderMessages()"
+      (send)="sendMessage($event)"
+      (typing)="emitTyping()"
+      (deleteGroup)="deleteSelectedGroup()"
+      (removeParticipant)="removeParticipant($event)"
+    />
+  </main>
+</div>
+
+<app-group-create
+  [visible]="showGroupCreate"
+  [users]="contacts"
+  [properties]="properties"
+  [canCreate]="canCreateGroup"
+  (closed)="showGroupCreate = false"
+  (created)="handleGroupCreated($event)"
+/>

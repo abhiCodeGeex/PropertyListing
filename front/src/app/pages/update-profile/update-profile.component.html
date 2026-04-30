@@ -1,0 +1,439 @@
+<div class="profile-wizard-page">
+  <div class="profile-shell">
+    <aside class="wizard-sidebar">
+      <div class="sidebar-card hero-card">
+        <span class="eyebrow">Profile Workspace</span>
+        <h1>Complete your identity and account details without confusion.</h1>
+        <p>
+          Each section is grouped by purpose so users know exactly what is required,
+          what is optional, and what affects tenancy and payment records.
+        </p>
+
+        <div class="progress-block">
+          <div class="progress-meta">
+            <span>Completion</span>
+            <strong>{{ progressPercent }}%</strong>
+          </div>
+          <div class="progress-track">
+            <span class="progress-fill" [style.width.%]="progressPercent"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-card steps-card">
+        @for (item of stepItems; track item.id) {
+        <button
+          type="button"
+          class="step-tile"
+          [class.is-active]="step === item.id"
+          [class.is-locked]="!canOpenStep(item.id)"
+          [class.has-error]="sectionHasError(item.id)"
+          [disabled]="!canOpenStep(item.id)"
+          (click)="openStep(item.id)">
+          <span class="step-badge">{{ item.badge }}</span>
+          <span class="step-copy">
+            <strong>{{ item.title }}</strong>
+            <small>{{ item.caption }}</small>
+          </span>
+        </button>
+        }
+      </div>
+    </aside>
+
+    <section class="wizard-main">
+      <div class="top-banner">
+        <div>
+          <span class="eyebrow">Step {{ step }} of {{ totalSteps }}</span>
+          <h2>{{ currentStepTitle }}</h2>
+          <p>{{ currentStepCaption }}</p>
+        </div>
+        <div class="banner-actions">
+          @if (canEditProfile) {
+          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="changeAadhaar()">
+            Change Aadhaar
+          </button>
+          }
+        </div>
+      </div>
+
+      <form [formGroup]="profileForm" (ngSubmit)="submit()" class="wizard-form">
+        @if (isStepVisible(1)) {
+        <div class="form-panel">
+          <div class="panel-header">
+            <div>
+              <h3>Verify Aadhaar</h3>
+              <p>Use Aadhaar verification to prefill trusted identity details and reduce manual errors.</p>
+            </div>
+            @if (profileExists) {
+            <span class="status-chip status-chip--ok">Existing profile detected</span>
+            }
+          </div>
+
+          <div class="info-strip">
+            <strong>What happens here</strong>
+            <span>OTP is sent to the mobile number linked with Aadhaar. After verification, protected profile fields become editable.</span>
+          </div>
+
+          <div class="field-grid field-grid--single">
+            <label class="field-card">
+              <span class="field-label required-label">Aadhaar Number</span>
+              <span class="field-help">Enter the 12-digit Aadhaar number used for identity verification.</span>
+              <div class="field-action-row">
+                <input
+                  autocomplete="off"
+                  type="text"
+                  maxlength="12"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
+                  formControlName="aadhar"
+                  placeholder="Enter 12-digit Aadhaar"
+                  (input)="sanitizeDigits('aadhar', 12)"
+                  [ngClass]="{ 'is-invalid': isInvalid('aadhar') }" />
+                <button type="button" class="btn btn-primary" (click)="sendOtp()" [disabled]="otpLoading">
+                  <span *ngIf="!otpLoading">Send OTP</span>
+                  <span *ngIf="otpLoading">Sending...</span>
+                </button>
+              </div>
+              @if (isInvalid('aadhar')) {
+              <small class="field-error">{{ getError('aadhar', profileForm, 'Aadhaar') }}</small>
+              }
+            </label>
+
+            <label class="field-card">
+              <span class="field-label required-label">Verification OTP</span>
+              <span class="field-help">Enter the 6-digit OTP received on the Aadhaar-linked mobile number.</span>
+              <div class="field-action-row">
+                <input
+                  autocomplete="off"
+                  type="text"
+                  maxlength="6"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
+                  formControlName="aadhar_otp"
+                  placeholder="Enter 6-digit OTP"
+                  (input)="sanitizeDigits('aadhar_otp', 6)"
+                  [ngClass]="{ 'is-invalid': isInvalid('aadhar_otp') }" />
+                <button type="button" class="btn btn-success" (click)="verifyOtp()" [disabled]="verifyLoading || !otpRequested">
+                  <span *ngIf="!verifyLoading">Verify</span>
+                  <span *ngIf="verifyLoading">Verifying...</span>
+                </button>
+              </div>
+              @if (isInvalid('aadhar_otp')) {
+              <small class="field-error">{{ getError('aadhar_otp', profileForm, 'OTP') }}</small>
+              }
+            </label>
+          </div>
+        </div>
+        }
+
+        @if (isStepVisible(2)) {
+        <div class="form-panel">
+          <div class="panel-header">
+            <div>
+              <h3>Personal Details</h3>
+              <p>Make sure the legal identity shown here matches what should appear in contracts and payment records.</p>
+            </div>
+            <span class="status-chip">Identity section</span>
+          </div>
+
+          <div class="profile-head">
+            <div class="avatar-stack">
+              <img [src]="previewImage ? previewImage : defaultImage" alt="Profile" (error)="handleImageError($event)" />
+              <div>
+                <strong>Profile photo</strong>
+                <small>Optional, but useful for tenant and owner identification.</small>
+              </div>
+            </div>
+            <button type="button" class="btn btn-outline-primary btn-sm" (click)="fileInputClick()">Upload Photo</button>
+            <input autocomplete="off" type="file" id="profileFile" (change)="onFileChange($event)" hidden />
+          </div>
+
+          <div class="field-grid">
+            <label class="field-card">
+              <span class="field-label required-label">First Name</span>
+              <input autocomplete="off" type="text" formControlName="first_name" placeholder="Enter first name" [ngClass]="{ 'is-invalid': isInvalid('first_name') }" />
+              @if (isInvalid('first_name')) {
+              <small class="field-error">{{ getError('first_name', profileForm, 'First name') }}</small>
+              }
+            </label>
+
+            <label class="field-card">
+              <span class="field-label required-label">Last Name</span>
+              <input autocomplete="off" type="text" formControlName="last_name" placeholder="Enter last name" [ngClass]="{ 'is-invalid': isInvalid('last_name') }" />
+              @if (isInvalid('last_name')) {
+              <small class="field-error">{{ getError('last_name', profileForm, 'Last name') }}</small>
+              }
+            </label>
+
+            <div class="field-card">
+              <span class="field-label required-label">Date of Birth</span>
+              <span class="field-help">Used for identity checks and profile completeness.</span>
+              <mat-form-field appearance="outline" class="wizard-date-field">
+                <input matInput [matDatepicker]="dobPicker" formControlName="dob" placeholder="Select date of birth" />
+                <mat-datepicker-toggle matIconSuffix [for]="dobPicker"></mat-datepicker-toggle>
+                <mat-datepicker #dobPicker></mat-datepicker>
+              </mat-form-field>
+              @if (isInvalid('dob')) {
+              <small class="field-error">{{ getError('dob', profileForm, 'Date of birth') }}</small>
+              }
+            </div>
+
+            <label class="field-card">
+              <span class="field-label required-label">Gender</span>
+              <select formControlName="gender" [ngClass]="{ 'is-invalid': isInvalid('gender') }">
+                <option value="">Select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+              @if (isInvalid('gender')) {
+              <small class="field-error">{{ getError('gender', profileForm, 'Gender') }}</small>
+              }
+            </label>
+
+            <label class="field-card">
+              <span class="field-label required-label">Marital Status</span>
+              <select formControlName="marital_status" [ngClass]="{ 'is-invalid': isInvalid('marital_status') }">
+                <option value="">Select marital status</option>
+                <option value="single">Single</option>
+                <option value="married">Married</option>
+                <option value="divorced">Divorced</option>
+                <option value="widowed">Widowed</option>
+              </select>
+              @if (isInvalid('marital_status')) {
+              <small class="field-error">{{ getError('marital_status', profileForm, 'Marital status') }}</small>
+              }
+            </label>
+
+            <label class="field-card">
+              <span class="field-label">PAN</span>
+              <span class="field-help">Optional. Standard format: `ABCDE1234F`.</span>
+              <input autocomplete="off" type="text" maxlength="10" autocapitalize="characters" formControlName="pan" placeholder="ABCDE1234F" (input)="normalizeUppercase('pan')" [ngClass]="{ 'is-invalid': isInvalid('pan') }" />
+              @if (isInvalid('pan')) {
+              <small class="field-error">{{ getError('pan', profileForm, 'PAN') }}</small>
+              }
+            </label>
+
+            <div class="field-card field-card--readonly">
+              <span class="field-label">Verified Aadhaar</span>
+              <input autocomplete="off" type="text" formControlName="aadhar" [readonly]="true" />
+              <small class="field-help" *ngIf="profileForm.get('aadhar_text')?.value">
+                Verified as: {{ profileForm.get('aadhar_text')?.value }}
+              </small>
+            </div>
+          </div>
+        </div>
+        }
+
+        @if (isStepVisible(3)) {
+        <div class="form-panel">
+          <div class="panel-header">
+            <div>
+              <h3>Contact Information</h3>
+              <p>Provide current and permanent contact details so notices, reminders, and verification follow the right channels.</p>
+            </div>
+            <span class="status-chip">Contact section</span>
+          </div>
+
+          <div class="field-grid">
+            <label class="field-card field-card--full">
+              <span class="field-label required-label">Current Address</span>
+              <span class="field-help">Use the address where you currently reside and can receive correspondence.</span>
+              <textarea formControlName="current_address" rows="4" placeholder="Enter current residential address" [ngClass]="{ 'is-invalid': isInvalid('current_address') }"></textarea>
+              @if (isInvalid('current_address')) {
+              <small class="field-error">{{ getError('current_address', profileForm, 'Current address') }}</small>
+              }
+            </label>
+
+            <label class="field-card field-card--full">
+              <span class="field-label required-label">Native or Permanent Address</span>
+              <span class="field-help">Use a stable fallback address for official records and long-term identification.</span>
+              <textarea formControlName="native_address" rows="4" placeholder="Enter permanent or native address" [ngClass]="{ 'is-invalid': isInvalid('native_address') }"></textarea>
+              @if (isInvalid('native_address')) {
+              <small class="field-error">{{ getError('native_address', profileForm, 'Native address') }}</small>
+              }
+            </label>
+
+            <label class="field-card">
+              <span class="field-label required-label">Phone Number</span>
+              <span class="field-help">This should be a reachable 10-digit mobile number used for urgent account communication.</span>
+              <input autocomplete="off" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="10" formControlName="phone" placeholder="Enter mobile number" (input)="sanitizeDigits('phone', 10)" [ngClass]="{ 'is-invalid': isInvalid('phone') }" />
+              @if (isInvalid('phone')) {
+              <small class="field-error">{{ getError('phone', profileForm, 'Phone') }}</small>
+              }
+            </label>
+          </div>
+        </div>
+        }
+
+        @if (isStepVisible(4)) {
+        <div class="form-panel">
+          <div class="panel-header">
+            <div>
+              <h3>Account Security and Review</h3>
+              <p>Confirm your sign-in details and review the final record before saving changes.</p>
+            </div>
+            <span class="status-chip">Final review</span>
+          </div>
+
+          <div class="field-grid">
+            <label class="field-card">
+              <span class="field-label required-label">Username</span>
+              <span class="field-help">Use a clean username without spaces for reliable sign-in.</span>
+              <input autocomplete="off" type="text" formControlName="username" placeholder="Username" [ngClass]="{ 'is-invalid': isInvalid('username') }" />
+              @if (isInvalid('username')) {
+              <small class="field-error">{{ getError('username', profileForm, 'Username') }}</small>
+              }
+            </label>
+
+            <div class="field-card">
+              <span class="field-label">Email Address</span>
+              <span class="field-help">Email changes require OTP confirmation for account protection.</span>
+              <div class="field-action-row">
+                <input type="email" formControlName="email" [readonly]="true" />
+                <button type="button" class="btn btn-outline-primary" (click)="openEmailModal()">Change</button>
+              </div>
+            </div>
+
+            <label class="field-card">
+              <span class="field-label">New Password</span>
+              <span class="field-help">Leave blank if you do not want to change the current password.</span>
+              <input autocomplete="new-password" type="password" formControlName="password" placeholder="Create a new password" />
+            </label>
+
+            <label class="field-card">
+              <span class="field-label">Confirm Password</span>
+              <span class="field-help">Must match the password field exactly.</span>
+              <input autocomplete="new-password" type="password" formControlName="password_confirmation" placeholder="Confirm password" [ngClass]="{ 'is-invalid': isInvalid('password_confirmation') }" />
+              @if (isInvalid('password_confirmation')) {
+              <small class="field-error">{{ getError('password_confirmation', profileForm, 'Confirm password') }}</small>
+              }
+            </label>
+          </div>
+
+          <div class="review-panel">
+            <div class="review-row">
+              <span>Name</span>
+              <strong>{{ profileForm.get('first_name')?.value || '-' }} {{ profileForm.get('last_name')?.value || '' }}</strong>
+            </div>
+            <div class="review-row">
+              <span>Username</span>
+              <strong>{{ profileForm.get('username')?.value || '-' }}</strong>
+            </div>
+            <div class="review-row">
+              <span>Phone</span>
+              <strong>{{ profileForm.get('phone')?.value || '-' }}</strong>
+            </div>
+            <div class="review-row">
+              <span>Verified Aadhaar</span>
+              <strong>{{ profileForm.get('aadhar')?.value || '-' }}</strong>
+            </div>
+          </div>
+
+          @if (canManageStripeConnect) {
+          <div class="review-panel">
+            <div class="review-row">
+              <span>Payment Settings</span>
+              <strong>Stripe Connect</strong>
+            </div>
+            <div class="review-row">
+              <span>Account</span>
+              <strong>{{ stripeConnectState?.account_id || 'Not connected' }}</strong>
+            </div>
+            <div class="review-row">
+              <span>Payout Status</span>
+              <strong>{{ stripeConnectState?.ready_for_payouts ? 'Ready for payouts' : 'Setup required' }}</strong>
+            </div>
+            <div class="review-row">
+              <span>Capabilities</span>
+              <strong>
+                Charges: {{ stripeConnectState?.charges_enabled ? 'Enabled' : 'Pending' }},
+                Payouts: {{ stripeConnectState?.payouts_enabled ? 'Enabled' : 'Pending' }}
+              </strong>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-3">
+              <button type="button" class="btn btn-outline-primary" (click)="refreshStripeConnect()" [disabled]="connectRefreshLoading">
+                <span *ngIf="!connectRefreshLoading">Refresh Stripe Status</span>
+                <span *ngIf="connectRefreshLoading">Refreshing...</span>
+              </button>
+              <button type="button" class="btn btn-primary" (click)="openStripeConnectOnboarding()" [disabled]="connectLoading">
+                <span *ngIf="!connectLoading">{{ stripeConnectState?.account_id ? 'Continue Stripe Setup' : 'Connect Stripe Account' }}</span>
+                <span *ngIf="connectLoading">Opening...</span>
+              </button>
+            </div>
+          </div>
+          }
+        </div>
+        }
+
+        <div class="wizard-actions">
+          <button type="button" class="btn btn-outline-secondary" (click)="previousStep()" [disabled]="isFirstStep">
+            Previous
+          </button>
+
+          <div class="actions-right">
+            <button type="button" class="btn btn-light" (click)="reset()">Reset</button>
+
+            @if (!isFinalStep) {
+            <button type="button" class="btn btn-primary" (click)="nextStep()">
+              Continue
+            </button>
+            } @else {
+            <button type="submit" class="btn btn-primary" [disabled]="updateLoading">
+              <span *ngIf="!updateLoading">Save Profile</span>
+              <span *ngIf="updateLoading">Saving...</span>
+            </button>
+            }
+          </div>
+        </div>
+      </form>
+    </section>
+  </div>
+</div>
+
+<c-modal [(visible)]="emailModalVisible" alignment="center" size="lg">
+  <c-modal-header>
+    <h5 class="modal-title">Change Email</h5>
+  </c-modal-header>
+  <c-modal-body>
+    <form [formGroup]="emailForm">
+      <div class="field-grid field-grid--single">
+        <label class="field-card">
+          <span class="field-label required-label">New Email Address</span>
+          <input type="email" formControlName="new_email" placeholder="Enter new email" [ngClass]="{ 'is-invalid': isInvalid('new_email', emailForm) }" />
+          @if (isInvalid('new_email', emailForm)) {
+          <small class="field-error">{{ getError('new_email', emailForm, 'Email') }}</small>
+          }
+        </label>
+
+        @if (otpSent) {
+        <label class="field-card">
+          <span class="field-label">Email OTP</span>
+          <input type="text" maxlength="6" inputmode="numeric" pattern="[0-9]*" formControlName="otp" placeholder="Enter 6 digit OTP" (input)="sanitizeDigits('otp', 6, emailForm)" [ngClass]="{ 'is-invalid': isInvalid('otp', emailForm) }" />
+          @if (isInvalid('otp', emailForm)) {
+          <small class="field-error">{{ getError('otp', emailForm, 'OTP') }}</small>
+          }
+        </label>
+        }
+      </div>
+
+      @if (emailError) {
+      <div class="modal-error">{{ emailError }}</div>
+      }
+    </form>
+  </c-modal-body>
+  <c-modal-footer>
+    <button cButton color="secondary" (click)="closeEmailModal()">Close</button>
+    @if (!otpSent) {
+    <button cButton color="primary" (click)="sendEmailOtp()" [disabled]="emailForm.get('new_email')?.invalid || emailOtpLoading">
+      <span *ngIf="!emailOtpLoading">Send OTP</span>
+      <span *ngIf="emailOtpLoading">Sending...</span>
+    </button>
+    } @else {
+    <button cButton color="success" (click)="verifyEmailOtp()" [disabled]="emailForm.invalid || verifyOtpLoading">
+      <span *ngIf="!verifyOtpLoading">Verify & Update</span>
+      <span *ngIf="verifyOtpLoading">Verifying...</span>
+    </button>
+    }
+  </c-modal-footer>
+</c-modal>

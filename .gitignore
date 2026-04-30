@@ -1,0 +1,76 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Build outputs
+/dist
+/build
+/public/build
+frontend/dist
+frontend/build
+
+# Logs
+*.log
+storage/logs/*
+backend/storage/logs/*
+
+# Runtime data
+/pidfiles
+*.pid
+*.seed
+frontend/node_modules
+frontend/package-lock.json
+backend/vendor
+backend/composer.lock
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Misc
+/.local-dev
+/.sixth
+/Features.docx
+/stripe.exe
+/event.json
+/*.cmd
+
+# Frontend specific
+front/node_modules
+front/package-lock.json
+front/dist
+front/build
+
+# Backend specific
+backend/node_modules
+backend/vendor
+backend/.env
+backend/storage/framework/cache/*
+backend/storage/framework/sessions/*
+/backend/storage/framework/views/*
+backend/storage/logs/*
+backend/bootstrap/cache/*
+
+# Testing
+/coverage
+/.nyc_output

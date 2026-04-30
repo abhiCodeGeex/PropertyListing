@@ -1,0 +1,90 @@
+<div class="container-fluid workspace-page">
+    <div class="surface-panel toolbar-panel">
+        <div class="toolbar-header">
+            <div class="toolbar-title">
+                <h5>Revenue Report</h5>
+                <p>Track recognized payment volume with date filters and property-level visibility.</p>
+            </div>
+            <div class="metric-chip">
+                Total Revenue
+                <strong>{{ formatCurrency(totalRevenue) }}</strong>
+            </div>
+        </div>
+
+        <div class="toolbar-actions mt-3">
+            <mat-form-field appearance="outline" class="report-range-field">
+                <mat-label>Reporting period</mat-label>
+                <mat-date-range-input [formGroup]="rangeGroup" [rangePicker]="reportRangePicker">
+                    <input matStartDate formControlName="start" placeholder="Start date" (dateChange)="onFromDateChange()">
+                    <input matEndDate formControlName="end" placeholder="End date" (dateChange)="onToDateChange()">
+                </mat-date-range-input>
+                <mat-datepicker-toggle matIconSuffix [for]="reportRangePicker"></mat-datepicker-toggle>
+                <mat-date-range-picker #reportRangePicker></mat-date-range-picker>
+            </mat-form-field>
+
+            <div class="search-control">
+                <input type="text" class="form-control" placeholder="Search property" [(ngModel)]="searchTerm"
+                    (ngModelChange)="onSearchChange($event)">
+                <span class="search-icon">
+                    <c-icon name="cil-magnifying-glass"></c-icon>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="enterprise-table-shell">
+        <div class="table-responsive">
+            <table class="table table-hover enterprise-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Property</th>
+                        <th>Deposit Type</th>
+                        <th>Amount</th>
+                        <th>Paid On</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr *ngFor="let p of reports; let i = index">
+                        <td><span class="row-index">{{ (page-1)*perPage + i + 1 }}</span></td>
+                        <td class="table-cell-strong">{{ p.property.property_name }}</td>
+                        <td><span class="soft-pill soft-pill--primary">{{ p.type }}</span></td>
+                        <td class="table-cell-strong">{{ formatCurrency(p.amount) }}</td>
+                        <td class="table-cell-soft">{{ p.created_at | date:'mediumDate' }}</td>
+                    </tr>
+
+                    @if(!reports.length){
+                    <tr>
+                        <td colspan="6" class="text-center">
+                            <div class="empty-state-panel my-3">
+                                <div class="empty-state-icon">
+                                    <c-icon name="cil-chart-line"></c-icon>
+                                </div>
+                                <div class="fw-semibold mb-1">No revenue data found</div>
+                                <div>Adjust the filters to inspect another time period.</div>
+                            </div>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="page-pagination">
+        <c-pagination align="center">
+            <li cPageItem [disabled]="page===1">
+                <a cPageLink (click)="changePage(page-1)">Prev</a>
+            </li>
+
+            <li *ngFor="let p of pages" cPageItem [class.active]="page===p">
+                <a cPageLink (click)="changePage(p)">{{p}}</a>
+            </li>
+
+            <li cPageItem [disabled]="page===totalPages">
+                <a cPageLink (click)="changePage(page+1)">Next</a>
+            </li>
+        </c-pagination>
+    </div>
+</div>
