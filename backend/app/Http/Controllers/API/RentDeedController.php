@@ -11,10 +11,13 @@ use App\Models\User;
 use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
@@ -75,13 +78,13 @@ class RentDeedController extends Controller
 
         if (empty($tenantId)) {
             throw ValidationException::withMessages([
-                'propertyId.id' => ['Assign a tenant to this property before creating a rent deed.'],
+                'property_id' => ['Assign a tenant to this property before creating a rent deed.'],
             ]);
         }
 
         if (empty($ownerId)) {
             throw ValidationException::withMessages([
-                'propertyId.id' => ['Owner is not associated with the property.'],
+                'property_id' => ['Owner is not associated with the property.'],
             ]);
         }
 
@@ -125,12 +128,12 @@ class RentDeedController extends Controller
         return [
             'agreementNumber' => 'required|string|max:255',
             'agreementDate' => 'required|date',
-            'propertyId.id' => 'required|exists:properties,id',
-            'size' => 'nullable|string|max:255',
-            'usage' => 'nullable|string|max:255',
+            'property_id' => 'required|integer|exists:properties,id',
             'rentDueDate' => 'required|integer|min:1|max:20',
             'maintenanceCharges' => 'required|string|max:255',
             'otherDetails' => 'nullable|string',
+            'file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'rent_deed_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ];
     }
 
@@ -139,7 +142,7 @@ class RentDeedController extends Controller
         return [
             'agreementNumber' => 'agreement number',
             'agreementDate' => 'agreement date',
-            'propertyId.id' => 'property',
+            'property_id' => 'property',
             'rentDueDate' => 'rent due date',
             'maintenanceCharges' => 'maintenance',
             'otherDetails' => 'other details',
@@ -151,13 +154,40 @@ class RentDeedController extends Controller
         return [
             'agreement_number' => trim($validated['agreementNumber']),
             'agreement_date' => Carbon::parse($validated['agreementDate'])->format('Y-m-d'),
-            'property_id' => $validated['propertyId']['id'],
-            'size' => $this->nullableTrimmed($validated['size'] ?? null),
-            'usage' => $this->nullableTrimmed($validated['usage'] ?? null),
+            'property_id' => $validated['property_id'],
             'rent_due_date' => $validated['rentDueDate'],
             'maintenance_charges' => trim($validated['maintenanceCharges']),
             'other_details' => $this->nullableTrimmed($validated['otherDetails'] ?? null),
         ];
+    }
+
+    private function validatedRentDeedData(Request $request): array
+    {
+        $propertyId = $request->input('property_id');
+
+        if ($propertyId === null && $request->has('propertyId')) {
+            $propertyField = $request->input('propertyId');
+            $propertyId = is_array($propertyField) ? ($propertyField['id'] ?? null) : $propertyField;
+        }
+
+        $data = array_merge($request->all(), [
+            'property_id' => $propertyId,
+        ]);
+
+        return validator($data, $this->rentDeedRules(), [], $this->rentDeedAttributes())->validate();
+    }
+
+    private function uploadedRentDeedFile(Request $request): ?UploadedFile
+    {
+        return $request->file('rent_deed_file') ?? $request->file('file');
+    }
+
+    private function storeRentDeedFile(UploadedFile $file): string
+    {
+        $extension = strtolower((string) $file->getClientOriginalExtension());
+        $generatedName = Str::uuid()->toString().($extension !== '' ? '.'.$extension : '');
+
+        return $file->storeAs('rent_deeds', $generatedName, 'public');
     }
 
     private function nullableTrimmed(mixed $value): ?string
@@ -225,30 +255,37 @@ class RentDeedController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate($this->rentDeedRules(), [], $this->rentDeedAttributes());
+        $data = $this->validatedRentDeedData($request);
         $payload = $this->rentDeedPayload($data);
         $rentDeed = null;
+        $storedFilePath = null;
+        $uploadedFile = $this->uploadedRentDeedFile($request);
 
         DB::beginTransaction();
 
         try {
-            $property = Property::where('id', $data['propertyId']['id'])->with('owner', 'tenants')->first();
+            $property = Property::where('id', $payload['property_id'])->with('owner', 'tenants')->first();
             abort_if(! $property, 404, 'Property not found');
             $this->authorizePropertyAccess($property);
             [$tenant_id, $owner_id] = $this->resolveRentDeedParties($property);
 
-            $rentDeed = RentDeed::create([
+            $rentDeedData = [
                 'agreement_number' => $payload['agreement_number'],
                 'agreement_date' => $payload['agreement_date'],
                 'owner_id' => $owner_id,
                 'tenant_id' => $tenant_id,
                 'property_id' => $payload['property_id'],
-                'size' => $payload['size'],
-                'usage' => $payload['usage'],
                 'rent_due_date' => $payload['rent_due_date'],
                 'maintenance_charges' => $payload['maintenance_charges'],
                 'other_details' => $payload['other_details'],
-            ]);
+            ];
+
+            if ($uploadedFile) {
+                $storedFilePath = $this->storeRentDeedFile($uploadedFile);
+                $rentDeedData['file_path'] = $storedFilePath;
+            }
+
+            $rentDeed = RentDeed::create($rentDeedData);
 
             DB::commit();
             $this->syncSchedulesForProperty($payload['property_id'], $tenant_id);
@@ -261,12 +298,21 @@ class RentDeedController extends Controller
             ], 201);
         } catch (HttpExceptionInterface $e) {
             DB::rollBack();
+            if ($storedFilePath) {
+                Storage::disk('public')->delete($storedFilePath);
+            }
             throw $e;
         } catch (ValidationException $e) {
             DB::rollBack();
+            if ($storedFilePath) {
+                Storage::disk('public')->delete($storedFilePath);
+            }
             throw $e;
         } catch (\Throwable $e) {
             DB::rollBack();
+            if ($storedFilePath) {
+                Storage::disk('public')->delete($storedFilePath);
+            }
             Log::error('Rent deed save failed', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -283,28 +329,51 @@ class RentDeedController extends Controller
     {
         $this->authorizeRentDeedAccess($rentDeed);
 
-        $data = $request->validate($this->rentDeedRules(), [], $this->rentDeedAttributes());
+        $data = $this->validatedRentDeedData($request);
         $payload = $this->rentDeedPayload($data);
         $property = Property::where('id', $payload['property_id'])->with('owner', 'tenants')->firstOrFail();
         $this->authorizePropertyAccess($property);
         [$tenantId, $ownerId] = $this->resolveRentDeedParties($property);
 
         $previousPropertyId = $rentDeed->property_id;
+        $previousFilePath = $rentDeed->file_path;
+        $newFilePath = null;
+        $uploadedFile = $this->uploadedRentDeedFile($request);
 
-        DB::transaction(function () use ($rentDeed, $payload, $tenantId, $ownerId) {
-            $rentDeed->update([
-                'agreement_number' => $payload['agreement_number'],
-                'agreement_date' => $payload['agreement_date'],
-                'owner_id' => $ownerId,
-                'tenant_id' => $tenantId,
-                'property_id' => $payload['property_id'],
-                'size' => $payload['size'],
-                'usage' => $payload['usage'],
-                'rent_due_date' => $payload['rent_due_date'],
-                'maintenance_charges' => $payload['maintenance_charges'],
-                'other_details' => $payload['other_details'],
-            ]);
-        });
+        try {
+            if ($uploadedFile) {
+                $newFilePath = $this->storeRentDeedFile($uploadedFile);
+            }
+
+            DB::transaction(function () use ($rentDeed, $payload, $tenantId, $ownerId, $newFilePath) {
+                $updateData = [
+                    'agreement_number' => $payload['agreement_number'],
+                    'agreement_date' => $payload['agreement_date'],
+                    'owner_id' => $ownerId,
+                    'tenant_id' => $tenantId,
+                    'property_id' => $payload['property_id'],
+                    'rent_due_date' => $payload['rent_due_date'],
+                    'maintenance_charges' => $payload['maintenance_charges'],
+                    'other_details' => $payload['other_details'],
+                ];
+
+                if ($newFilePath) {
+                    $updateData['file_path'] = $newFilePath;
+                }
+
+                $rentDeed->update($updateData);
+            });
+        } catch (\Throwable $e) {
+            if ($newFilePath) {
+                Storage::disk('public')->delete($newFilePath);
+            }
+
+            throw $e;
+        }
+
+        if ($newFilePath && $previousFilePath) {
+            Storage::disk('public')->delete($previousFilePath);
+        }
 
         $this->syncSchedulesForProperty($payload['property_id'], $tenantId);
 
@@ -325,6 +394,10 @@ class RentDeedController extends Controller
     public function destroy(RentDeed $rentDeed)
     {
         $this->authorizeRentDeedAccess($rentDeed);
+
+        if ($rentDeed->file_path) {
+            Storage::disk('public')->delete($rentDeed->file_path);
+        }
 
         $rentDeed->delete();
 

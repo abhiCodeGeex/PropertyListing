@@ -14,6 +14,9 @@ use App\Models\PropertyTenant;
 use App\Models\RentDeed;
 use App\Models\RentSchedule;
 use App\Models\User;
+use App\Modules\Chat\Models\Chat;
+use App\Modules\Chat\Models\ChatParticipant;
+use App\Modules\Chat\Models\MessageAttachment;
 use App\Services\StripePriceService;
 use App\Services\StripePayoutService;
 use App\Services\StripeSubscriptionService;
@@ -192,15 +195,13 @@ class RentAccessAndHistoryTest extends TestCase
             ->postJson('/api/properties/rent-deeds', [
                 'agreementNumber' => 'AGR-VALIDATION-001',
                 'agreementDate' => '2026-04-01',
-                'propertyId' => ['id' => $property->id],
-                'size' => '1200 sq ft',
-                'usage' => 'Residential',
+                'property_id' => $property->id,
                 'rentDueDate' => 5,
                 'maintenanceCharges' => 'Tenant',
                 'otherDetails' => 'Test deed',
             ])
             ->assertStatus(422)
-            ->assertJsonValidationErrors('propertyId.id')
+            ->assertJsonValidationErrors('property_id')
             ->assertJsonFragment([
                 'Assign a tenant to this property before creating a rent deed.',
             ]);
@@ -237,9 +238,7 @@ class RentAccessAndHistoryTest extends TestCase
             ->postJson('/api/properties/rent-deeds', [
                 'agreementNumber' => 'AGR-MAIL-001',
                 'agreementDate' => '2026-04-01',
-                'propertyId' => ['id' => $property->id],
-                'size' => '1200 sq ft',
-                'usage' => 'Residential',
+                'property_id' => $property->id,
                 'rentDueDate' => 5,
                 'maintenanceCharges' => 'Tenant',
                 'otherDetails' => 'PDF should be mailed',
@@ -258,6 +257,193 @@ class RentAccessAndHistoryTest extends TestCase
             'title' => 'Rent Deed Created',
             'notifiable_type' => RentDeed::class,
         ]);
+    }
+
+    public function test_rent_deed_creation_handles_file_upload(): void
+    {
+        Storage::fake('public');
+        Role::findOrCreate('owner', 'web');
+
+        $owner = User::factory()->create();
+        $owner->assignRole('owner');
+
+        $tenant = User::factory()->create();
+        $property = $this->createProperty($owner->id, 'File Upload Residency');
+        PropertyTenant::create([
+            'property_id' => $property->id,
+            'tenant_id' => $tenant->id,
+            'start_date' => '2026-04-01',
+        ]);
+
+        $file = \Illuminate\Http\UploadedFile::fake()->create('rent_deed.pdf', 100);
+
+        $response = $this
+            ->actingAs($owner, 'api')
+            ->post('/api/properties/rent-deeds', [
+                'agreementNumber' => 'AGR-FILE-001',
+                'agreementDate' => '2026-04-01',
+                'property_id' => $property->id,
+                'rentDueDate' => 5,
+                'maintenanceCharges' => 'Tenant',
+                'rent_deed_file' => $file,
+            ]);
+
+        $response->assertCreated();
+
+        $deed = RentDeed::firstWhere('agreement_number', 'AGR-FILE-001');
+        $this->assertNotNull($deed->file_path);
+        $this->assertNotNull($deed->file_url);
+        Storage::disk('public')->assertExists($deed->file_path);
+    }
+
+    public function test_rent_deed_update_replaces_uploaded_file_via_multipart_post(): void
+    {
+        Storage::fake('public');
+        Mail::fake();
+        Role::findOrCreate('owner', 'web');
+
+        $owner = User::factory()->create();
+        $owner->assignRole('owner');
+
+        $tenant = User::factory()->create();
+        $property = $this->createProperty($owner->id, 'Replace File Residency');
+        PropertyTenant::create([
+            'property_id' => $property->id,
+            'tenant_id' => $tenant->id,
+            'start_date' => '2026-04-01',
+        ]);
+
+        $originalPath = 'rent_deeds/original-test-file.pdf';
+        Storage::disk('public')->put($originalPath, 'original');
+
+        $rentDeed = RentDeed::create([
+            'agreement_number' => 'AGR-FILE-UPDATE-001',
+            'agreement_date' => '2026-04-01',
+            'file_path' => $originalPath,
+            'owner_id' => $owner->id,
+            'tenant_id' => $tenant->id,
+            'property_id' => $property->id,
+            'rent_due_date' => 5,
+            'maintenance_charges' => 'Tenant',
+        ]);
+
+        $replacement = \Illuminate\Http\UploadedFile::fake()->create('updated_deed.pdf', 120);
+
+        $this
+            ->actingAs($owner, 'api')
+            ->post('/api/properties/rent-deeds/'.$rentDeed->id, [
+                'agreementNumber' => 'AGR-FILE-UPDATE-001',
+                'agreementDate' => '2026-04-02',
+                'property_id' => $property->id,
+                'rentDueDate' => 8,
+                'maintenanceCharges' => 'Shared',
+                'otherDetails' => 'Updated file upload',
+                'rent_deed_file' => $replacement,
+            ])
+            ->assertOk()
+            ->assertJsonPath('rentDeed.rent_due_date', 8)
+            ->assertJsonPath('rentDeed.maintenance_charges', 'Shared');
+
+        $rentDeed->refresh();
+
+        $this->assertNotSame($originalPath, $rentDeed->file_path);
+        Storage::disk('public')->assertMissing($originalPath);
+        Storage::disk('public')->assertExists($rentDeed->file_path);
+    }
+
+    public function test_invalid_uploaded_file_returns_clean_error_instead_of_crashing(): void
+    {
+        Role::findOrCreate('owner', 'web');
+
+        $owner = User::factory()->create();
+        $owner->assignRole('owner');
+
+        $tenant = User::factory()->create();
+        $property = $this->createProperty($owner->id, 'Invalid Upload Residency');
+        PropertyTenant::create([
+            'property_id' => $property->id,
+            'tenant_id' => $tenant->id,
+            'start_date' => '2026-04-01',
+        ]);
+
+        $brokenUpload = new \Illuminate\Http\UploadedFile(
+            public_path(),
+            'broken.pdf',
+            'application/pdf',
+            UPLOAD_ERR_CANT_WRITE,
+            true
+        );
+
+        $this
+            ->actingAs($owner, 'api')
+            ->call('POST', '/api/properties/rent-deeds', [
+                'agreementNumber' => 'AGR-BROKEN-001',
+                'agreementDate' => '2026-04-01',
+                'property_id' => $property->id,
+                'rentDueDate' => 5,
+                'maintenanceCharges' => 'Tenant',
+            ], [], [
+                'rent_deed_file' => $brokenUpload,
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'The server could not write the uploaded file to temporary storage.');
+    }
+
+    public function test_chat_attachment_upload_continues_to_use_local_storage(): void
+    {
+        Storage::fake('local');
+        Role::findOrCreate('owner', 'web');
+        Role::findOrCreate('tenant', 'web');
+
+        $owner = User::factory()->create();
+        $owner->assignRole('owner');
+
+        $tenant = User::factory()->create();
+        $tenant->assignRole('tenant');
+
+        $property = $this->createProperty($owner->id, 'Chat Upload Residency');
+        PropertyTenant::create([
+            'property_id' => $property->id,
+            'tenant_id' => $tenant->id,
+            'start_date' => '2026-04-01',
+        ]);
+
+        $chat = Chat::create([
+            'type' => Chat::TYPE_PRIVATE,
+            'private_key' => "{$owner->id}:{$tenant->id}",
+            'created_by' => $owner->id,
+            'meta' => ['created_via' => 'test'],
+        ]);
+
+        ChatParticipant::create([
+            'chat_id' => $chat->id,
+            'user_id' => $owner->id,
+            'added_by' => $owner->id,
+            'joined_at' => now(),
+        ]);
+
+        ChatParticipant::create([
+            'chat_id' => $chat->id,
+            'user_id' => $tenant->id,
+            'added_by' => $owner->id,
+            'joined_at' => now(),
+        ]);
+
+        $attachment = \Illuminate\Http\UploadedFile::fake()->image('chat-proof.png');
+
+        $this
+            ->actingAs($owner, 'api')
+            ->post('/api/v1/chat/chats/'.$chat->id.'/messages', [
+                'message' => 'Attachment check',
+                'type' => 'image',
+                'attachments' => [$attachment],
+            ])
+            ->assertCreated();
+
+        $storedAttachment = MessageAttachment::query()->first();
+        $this->assertNotNull($storedAttachment);
+        $this->assertSame('local', $storedAttachment->disk);
+        Storage::disk('local')->assertExists($storedAttachment->path);
     }
 
     public function test_overdue_listing_includes_all_due_unpaid_rent_through_current_month(): void

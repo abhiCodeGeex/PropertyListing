@@ -150,6 +150,7 @@ Route::middleware('auth:api')->group(function () {
 
     // Route::get('properties/rent-deeds/{rentDeed}', [RentDeedController::class, 'show']);
     Route::post('properties/rent-deeds', [RentDeedController::class, 'store']);
+    Route::post('properties/rent-deeds/{rentDeed}', [RentDeedController::class, 'update']);
     Route::put('properties/rent-deeds/{rentDeed}', [RentDeedController::class, 'update']);
     Route::delete('properties/rent-deeds/{rentDeed}', [RentDeedController::class, 'destroy']);
 

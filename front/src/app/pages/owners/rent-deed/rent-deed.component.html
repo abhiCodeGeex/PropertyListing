@@ -41,6 +41,11 @@
             @if (highlightedDeed) {
             <span class="soft-pill soft-pill--primary">Agreement #{{ highlightedDeed.agreement_number }}</span>
             <span class="soft-pill soft-pill--warning">Due Day {{ highlightedDeed.rent_due_date }}</span>
+            @if (highlightedDeed.file_url) {
+                <button cButton color="info" size="sm" class="soft-pill-btn" (click)="viewFile(highlightedDeed.file_url)">
+                    <c-icon name="cil-external-link" size="sm"></c-icon> View Deed
+                </button>
+            }
             } @else {
             <span class="soft-pill soft-pill--neutral">No Rent Deed Yet</span>
             }
@@ -59,8 +64,6 @@
                 <div><span>Tenant</span><strong>{{ highlightedDeed?.tenant?.name || detailTenants[0]?.name || '-' }}</strong></div>
                 <div><span>Rent Due Date</span><strong>{{ highlightedDeed?.rent_due_date || '-' }}</strong></div>
                 <div><span>Maintenance Charges</span><strong>{{ highlightedDeed?.maintenance_charges || '-' }}</strong></div>
-                <div><span>Size</span><strong>{{ highlightedDeed?.size || '-' }}</strong></div>
-                <div><span>Usage</span><strong>{{ highlightedDeed?.usage || '-' }}</strong></div>
                 <div><span>Subscription</span><strong>{{ highlightedDeed ? subscriptionStatusLabel(highlightedDeed) : '-' }}</strong></div>
                 <div class="deed-detail-list__wide"><span>Other Details</span><strong>{{ highlightedDeed?.other_details || 'No extra deed notes.' }}</strong></div>
             </div>
@@ -137,6 +140,11 @@
                     }
 
                     <div class="entity-card__actions justify-content-end">
+                        @if (deed.file_url) {
+                        <button cButton color="info" size="sm" class="interactive-icon-btn" (click)="viewFile(deed.file_url)" title="View Deed">
+                            <c-icon name="cil-external-link"></c-icon>
+                        </button>
+                        }
                         @if(hasAtionRole('manage_rent_deed')){
                         <button cButton color="warning" size="sm" class="interactive-icon-btn" (click)="openEditModal(deed)">
                             <c-icon name="cil-pencil"></c-icon>
@@ -266,7 +274,7 @@
 
                             @if (field.type !== 'select') {
                             <input [type]="field.type" class="form-control" [formControlName]="field.name"
-                                [placeholder]="field.name === 'size' ? 'Enter unit size' : field.name === 'usage' ? 'Example: Residential lease' : 'Enter value'"
+                                [placeholder]="'Enter ' + field.label"
                                 [attr.min]="field.name === 'rentDueDate' ? 1 : null"
                                 [attr.max]="field.name === 'rentDueDate' ? 20 : null"
                                 [attr.step]="field.name === 'rentDueDate' ? 1 : null"
@@ -298,7 +306,22 @@
                         placeholder="Add any special terms, notes, or exceptions for this deed"></textarea>
                     <div class="form-text">Use this section for deed-specific notes that are not part of the shared property setup.</div>
                 </div>
+
+                <!-- File Upload -->
+                <div class="col-md-12 mt-3">
+                    <label class="form-label fw-semibold">Rent Deed File (PDF or Image)</label>
+                    <input type="file" class="form-control" (change)="handleFileInput($event)" accept=".pdf,image/*" />
+                    <div class="form-text">Upload a scanned copy of the rent deed. Max size 5MB.</div>
+                    @if (isEditMode && selectedDeed?.file_url) {
+                        <div class="mt-2">
+                            <a [href]="selectedDeed.file_url" target="_blank" class="text-decoration-none">
+                                <c-icon name="cil-file" class="me-1"></c-icon> View Current File
+                            </a>
+                        </div>
+                    }
+                </div>
             </div>
+
 
             <div class="mt-4 text-end">
                 <button cButton color="success" type="submit">{{ isEditMode ? 'Update' : 'Create' }}</button>

@@ -64,14 +64,6 @@
                 <td>{{ $rentDeed['manager_name'] ?? '-' }}</td>
             </tr>
             <tr>
-                <th>Size</th>
-                <td>{{ $rentDeed['size'] ?? '-' }}</td>
-            </tr>
-            <tr>
-                <th>Usage</th>
-                <td>{{ $rentDeed['usage'] ?? '-' }}</td>
-            </tr>
-            <tr>
                 <th>Monthly Rent</th>
                 <td>{{ $rentDeed['monthly_rent'] !== null ? \App\Support\Currency::format($rentDeed['monthly_rent']) : '-' }}</td>
             </tr>

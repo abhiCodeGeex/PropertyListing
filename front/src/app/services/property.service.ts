@@ -77,11 +77,16 @@ export class PropertyService extends BaseApiService {
   }
 
   createRentDeed(payload: any): Observable<any> {
-    return this.post(`${this.endpoint}/rent-deeds`, payload);
+    const data = payload instanceof FormData ? payload : payload;
+    return this.post(`${this.endpoint}/rent-deeds`, data);
   }
 
   updateRentDeed(id: number, payload: any): Observable<any> {
-    return this.put(`${this.endpoint}/rent-deeds/${id}`, payload);
+    const data = payload instanceof FormData ? payload : payload;
+    if (data instanceof FormData) {
+      return this.post(`${this.endpoint}/rent-deeds/${id}`, data);
+    }
+    return this.put(`${this.endpoint}/rent-deeds/${id}`, data);
   }
 
   deleteRentDeed(id: number): Observable<void> {

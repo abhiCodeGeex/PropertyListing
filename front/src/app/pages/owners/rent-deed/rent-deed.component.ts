@@ -35,6 +35,7 @@ import { formatAppCurrency } from '../../../shared/utils/currency.util';
 })
 export class RentDeedComponent implements OnInit, OnDestroy {
   protected readonly formatCurrency = formatAppCurrency;
+  private readonly maxRentDeedFileSizeBytes = 5 * 1024 * 1024;
   rentDeeds: any[] = [];
   owners: any[] = [];
   tenants: any[] = [];
@@ -113,14 +114,13 @@ export class RentDeedComponent implements OnInit, OnDestroy {
       estamp: ['', [this.requiredTrimmed(), Validators.maxLength(255)]],
       agreementDate: [null, Validators.required],
       propertyId: ['', Validators.required],
-      size: [''],
-      usage: [''],
       rentDueDate: [
         null,
         [Validators.required, Validators.min(1), Validators.max(20)]
       ],
       maintenanceCharges: ['', Validators.required],
-      otherDetails: ['']
+      otherDetails: [''],
+      file: [null]
     });
   }
 
@@ -188,8 +188,6 @@ export class RentDeedComponent implements OnInit, OnDestroy {
   loadPropertyDetails(property: any) {
     this.selectedProperty = property;
     this.form.patchValue({
-      size: property.size ?? '',
-      usage: property.usage ?? '',
       rentDueDate: property.rent_due_date,
       maintenanceCharges: property.maintenance_charges ?? ''
     });
@@ -204,11 +202,10 @@ export class RentDeedComponent implements OnInit, OnDestroy {
       estamp: '',
       agreementDate: null,
       propertyId: '',
-      size: '',
-      usage: '',
       rentDueDate: null,
       maintenanceCharges: '',
-      otherDetails: ''
+      otherDetails: '',
+      file: null
     });
     this.selectedProperty = null;
     this.form.markAsPristine();
@@ -222,16 +219,16 @@ export class RentDeedComponent implements OnInit, OnDestroy {
     this.formErrorService.clearServerErrors(this.form);
     const selectedProperty = this.properties.find(p => p.id === deed.property_id) || null;
 
+
     this.selectedProperty = selectedProperty;
     this.form.patchValue({
       estamp: deed.agreement_number,
       agreementDate: deed.agreement_date ? new Date(deed.agreement_date) : '',
       propertyId: selectedProperty,
-      size: deed.size || selectedProperty?.size || '',
-      usage: deed.usage || selectedProperty?.usage || '',
       rentDueDate: deed.rent_due_date || selectedProperty?.rent_due_date || '',
       maintenanceCharges: deed.maintenance_charges || selectedProperty?.maintenance_charges || '',
-      otherDetails: deed.other_details || ''
+      otherDetails: deed.other_details || '',
+      file: null
     });
 
     this.form.markAsPristine();
@@ -265,26 +262,23 @@ export class RentDeedComponent implements OnInit, OnDestroy {
       return;
     }
     const v = this.normalizePayload(this.form.getRawValue());
-    const payload = {
-      agreementNumber: v.estamp,
-      agreementDate: this.formatDate(v.agreementDate),
-      propertyId: v.propertyId,
-      size: v.size,
-      usage: v.usage,
-      rentDueDate: v.rentDueDate,
-      maintenanceCharges: v.maintenanceCharges,
-      otherDetails: v.otherDetails
-    };
+    
+    const formData = new FormData();
+    formData.append('agreementNumber', v.estamp);
+    formData.append('agreementDate', this.formatDate(v.agreementDate) || '');
+    formData.append('property_id', v.propertyId?.id || v.propertyId);
+    formData.append('rentDueDate', String(v.rentDueDate));
+    formData.append('maintenanceCharges', v.maintenanceCharges);
+    if (v.otherDetails) formData.append('otherDetails', v.otherDetails);
+    if (v.file) formData.append('rent_deed_file', v.file);
 
     const req = this.isEditMode
-      ? this.deedService.updateRentDeed(this.selectedDeed.id, payload)
-      : this.deedService.createRentDeed(payload);
+      ? this.deedService.updateRentDeed(this.selectedDeed.id, formData)
+      : this.deedService.createRentDeed(formData);
+
 
     req.subscribe({
       next: () => {
-        this.toast.showSuccess(
-          this.isEditMode ? 'Rent Deed updated!' : 'Rent Deed created!'
-        );
         this.deedModalVisible = false;
         this.loadRentDeeds();
       },
@@ -310,7 +304,8 @@ export class RentDeedComponent implements OnInit, OnDestroy {
       usage: 'Usage',
       maintenanceCharges: 'Maintenance',
       rentDueDate: 'Rent Due Date',
-      otherDetails: 'Other Details'
+      otherDetails: 'Other Details',
+      file: 'Rent Deed File'
     };
 
     return map[field] || field;
@@ -322,8 +317,6 @@ export class RentDeedComponent implements OnInit, OnDestroy {
   }
 
   propertyFields = [
-    { name: 'size', label: 'Size', type: 'text' },
-    { name: 'usage', label: 'Usage', type: 'text' },
     { name: 'rentDueDate', label: 'Rent Due Date', type: 'number' },
     { name: 'maintenanceCharges', label: 'Maintenance', type: 'select', options: this.maintenanceOptions },
   ];
@@ -407,6 +400,32 @@ export class RentDeedComponent implements OnInit, OnDestroy {
     return 'soft-pill soft-pill--neutral';
   }
 
+  handleFileInput(event: any) {
+    const file = event.target.files[0];
+    const input = event.target as HTMLInputElement;
+
+    if (!file) {
+      this.form.patchValue({ file: null });
+      return;
+    }
+
+    if (file.size > this.maxRentDeedFileSizeBytes) {
+      this.form.patchValue({ file: null });
+      if (input) input.value = '';
+      this.toast.showError('Rent deed files must be 5MB or smaller.');
+      return;
+    }
+
+    this.form.patchValue({ file: file });
+    this.form.get('file')?.markAsDirty();
+  }
+
+  viewFile(url: string) {
+    if (url) {
+      window.open(url, '_blank');
+    }
+  }
+
   get viewingPropertyDetail(): boolean {
     return this.propertyId !== null;
   }
@@ -443,8 +462,6 @@ export class RentDeedComponent implements OnInit, OnDestroy {
     return {
       ...rawValue,
       estamp: rawValue.estamp?.trim() ?? '',
-      size: rawValue.size?.trim() || null,
-      usage: rawValue.usage?.trim() || null,
       otherDetails: rawValue.otherDetails?.trim() || null,
       rentDueDate: rawValue.rentDueDate === '' || rawValue.rentDueDate === null ? null : Number(rawValue.rentDueDate),
     };

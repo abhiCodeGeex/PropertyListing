@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class RentDeed extends Model
 {
@@ -13,24 +14,25 @@ class RentDeed extends Model
     protected $fillable = [
         'agreement_number',
         'agreement_date',
+        'file_path',
         'owner_id',
         'tenant_id',
         'property_id',
-        'size',
-        'usage',
-        'monthly_rent',
-        'payment_mode',
-        'due_date',
         'rent_due_date',
         'maintenance_charges',
         'other_details',
     ];
 
+    protected $appends = ['file_url'];
+
     protected $casts = [
-        'monthly_rent' => 'decimal:2',
         'agreement_date' => 'date',
-        'due_date' => 'date',
     ];
+
+    public function getFileUrlAttribute()
+    {
+        return $this->file_path ? Storage::disk('public')->url($this->file_path) : null;
+    }
 
     // Relationships
     public function owner()
