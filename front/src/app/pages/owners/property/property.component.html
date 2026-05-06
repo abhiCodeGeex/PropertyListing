@@ -260,7 +260,7 @@
                             @for (media of existingMediaFiles; track media.id) {
                             <button type="button" class="media-pill" (click)="openMedia(media.file_url)">
                                 <span>{{ media.file_type === 'image' ? '🖼️' : '📄' }}</span>
-                                <span>{{ media.file_type | titlecase }}</span>
+                                <span>{{ mediaLabel(media.file_type) }}</span>
                             </button>
                             }
                         </div>
@@ -271,9 +271,9 @@
                     <div class="media-preview-wrap mt-2">
                         <div class="media-preview-title">Selected Files</div>
                         <div class="media-preview-list">
-                            @for (file of selectedMediaFiles; track file.name + $index; let idx = $index) {
+                            @for (file of selectedMediaFiles; track selectedFileTrack($index, file); let idx = $index) {
                             <span class="media-pill media-pill--selected">
-                                <span>{{ file.type.startsWith('image/') ? '🖼️' : '📄' }}</span>
+                                <span>{{ selectedFileEmoji(file) }}</span>
                                 <span class="media-name">{{ file.name }}</span>
                                 <button type="button" class="media-remove" (click)="removeSelectedMediaFile(idx)">×</button>
                             </span>

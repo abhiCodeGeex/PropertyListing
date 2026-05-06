@@ -519,6 +519,19 @@ export class PropertyComponent implements OnInit, OnDestroy {
     }
   }
 
+
+  mediaLabel(fileType: string): string {
+    return fileType === 'image' ? 'Image' : 'Document';
+  }
+
+  selectedFileTrack(_: number, file: File): string {
+    return `${file.name}-${file.size}-${file.lastModified}`;
+  }
+
+  selectedFileEmoji(file: File): string {
+    return file.type.startsWith('image/') ? '🖼️' : '📄';
+  }
+
   shouldShowMediaSection(): boolean {
     const furnishingType = this.form?.get('furnishingType')?.value;
     return furnishingType === 'Semi-Furnished' || furnishingType === 'Fully-Furnished';
