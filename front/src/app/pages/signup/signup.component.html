@@ -1,120 +1,99 @@
-<div class="bg-light dark:bg-dark min-vh-100 d-flex align-items-center justify-content-center py-5">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-10 col-xl-8">
-                <div class="card shadow-lg rounded-4 overflow-hidden">
-                    <div class="row g-0">
+<div class="auth-page">
+  <div class="auth-card">
 
-                        <!-- Left: Signup Form -->
-                        <div class="col-md-7 bg-white p-4">
-                            <div class="text-center mb-4">
-                                <img src="../../../assets/images/logo.png" alt="Property Listing Logo"
-                                    class="img-fluid mb-2" style="max-height: 60px;" />
-                                <h3>{{ formConfig?.form | titlecase }}</h3>
-                                <p class="text-secondary mb-0">Create your account</p>
-                                <small class="text-muted d-block mt-2">Fill in the details below and choose the role you want to start with.</small>
-                            </div>
+    <!-- LEFT : SIGNUP FORM -->
+    <div class="auth-left">
 
-                            @if(signupForm && formConfig) {
-                            <form [formGroup]="signupForm" (ngSubmit)="submit()">
+      <div class="auth-heading">
+        <img src="../../../assets/images/logo.png" alt="Property Listing" class="auth-logo" />
+        <h1>Create your account</h1>
+        <p>Join Property Listing — it's free to get started.</p>
+      </div>
 
-                                @for(field of formConfig.fields; track field.name) {
-                                <div class="mb-3">
+      @if(signupForm && formConfig) {
+      <form [formGroup]="signupForm" (ngSubmit)="submit()" class="auth-form" novalidate>
 
-                                    <!-- Text / Email / Password -->
-                                    @if(field.type !== 'select') {
-                                    <div [cFormFloating]="true">
-                                        <input [autocomplete]="field.type === 'password' ? 'new-password' : 'off'"
-                                            [type]="field.type" [formControlName]="field.name" cFormControl
-                                            [placeholder]="field.placeholder"
-                                            [ngClass]="{'is-invalid': isInvalid(field.name)}" />
-                                        <label cLabel [class.required-label]="field.validation?.includes('required')">{{ field.label }}</label>
-                                    </div>
-                                    }
+        @for(field of formConfig.fields; track field.name) {
+        <div class="pl-field">
+          <label [for]="'s-' + field.name" class="pl-label"
+            [class.required-label]="field.validation?.includes('required')">
+            {{ field.label }}
+          </label>
 
-                                    <!-- Select -->
-                                    @if(field.type === 'select') {
-                                    <div [cFormFloating]="true">
-                                        <select cSelect [formControlName]="field.name"
-                                            [ngClass]="{'is-invalid': isInvalid(field.name)}">
-                                            <option value="" disabled>Select {{ field.label }}</option>
-                                            @for(r of roles; track r.id) {
-                                            <option [value]="r.name">{{ r.name | titlecase }}</option>
-                                            }
-                                        </select>
-                                        <label cLabel [class.required-label]="field.validation?.includes('required')">{{ field.label }}</label>
-                                    </div>
-                                    @if(field.name === 'role') {
-                                    <div class="form-text">Pick the role that matches how you will use the platform first.</div>
-                                    }
-                                    }
+          @if(field.type !== 'select') {
+          <input
+            [id]="'s-' + field.name"
+            class="pl-input"
+            [class.is-invalid]="isInvalid(field.name)"
+            [type]="field.type"
+            [formControlName]="field.name"
+            [placeholder]="field.placeholder || ''"
+            [autocomplete]="field.type === 'password' ? 'new-password' : 'off'" />
+          }
 
-                                    <!-- Field validation errors -->
-                                    @if(isInvalid(field.name)) {
-                                    <div class="text-danger">
-                                        @if(signupForm.get(field.name)?.errors?.['required']) {
-                                        <small>{{ field.label }} is required.</small>
-                                        }
-                                        @if(signupForm.get(field.name)?.errors?.['email']) {
-                                        <small>Invalid email format.</small>
-                                        }
-                                        @if(signupForm.get(field.name)?.errors?.['minlength']) {
-                                        <small>Minimum length is {{
-                                            signupForm.get(field.name)?.errors?.['minlength'].requiredLength }}.</small>
-                                        }
-                                        @if(signupForm.get(field.name)?.errors?.['serverError']) {
-                                        <small>{{ signupForm.get(field.name)?.errors?.['serverError'] }}</small>
-                                        }
-                                    </div>
-                                    }
+          @if(field.type === 'select') {
+          <select
+            [id]="'s-' + field.name"
+            class="pl-input"
+            [class.is-invalid]="isInvalid(field.name)"
+            [formControlName]="field.name">
+            <option value="" disabled>Select {{ field.label }}</option>
+            @for(r of roles; track r.id) {
+            <option [value]="r.name">{{ r.name | titlecase }}</option>
+            }
+          </select>
+          @if(field.name === 'role') {
+          <span class="pl-field-hint">Choose the role that best describes you on the platform.</span>
+          }
+          }
 
-                                </div>
-                                }
-
-                                <!-- Password mismatch -->
-                                @if(signupForm.errors?.['passwordMismatch'] &&
-                                signupForm.get('password_confirmation')?.touched &&
-                                signupForm.get('password_confirmation')?.valid) {
-                                <div class="text-danger mb-3">
-                                    <small>Passwords do not match.</small>
-                                </div>
-                                }
-
-                                <!-- Captcha -->
-                                <div #captchaContainer></div>
-                                @if(isInvalid('recaptcha')) {
-                                <div class="text-danger mt-1"><small>Captcha verification is required.</small></div>
-                                }
-
-                                <!-- Server error -->
-                                @if(error) {
-                                <div class="alert alert-danger rounded-3">{{ error }}</div>
-                                }
-
-                                <!-- Submit -->
-                                <div class="d-grid mt-1">
-                                    <button cButton color="success" type="submit" [disabled]="signupForm.invalid">Create
-                                        Account</button>
-                                </div>
-
-                            </form>
-                            }
-
-                        </div>
-
-                        <!-- Right: Login Info -->
-                        <div
-                            class="col-md-5 bg-primary text-white d-flex align-items-center justify-content-center p-4">
-                            <div class="text-center">
-                                <h2>LogIn</h2>
-                                <p>Login to get access to all features and services.</p>
-                                <a cButton color="light" [routerLink]="'/login'">Login Now!</a>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
+          @if(isInvalid(field.name)) {
+          <div class="pl-error-msg">
+            @if(signupForm.get(field.name)?.errors?.['required']) { {{ field.label }} is required. }
+            @if(signupForm.get(field.name)?.errors?.['email']) { Enter a valid email address. }
+            @if(signupForm.get(field.name)?.errors?.['minlength']) {
+              Minimum {{ signupForm.get(field.name)?.errors?.['minlength'].requiredLength }} characters required.
+            }
+            @if(signupForm.get(field.name)?.errors?.['serverError']) {
+              {{ signupForm.get(field.name)?.errors?.['serverError'] }}
+            }
+          </div>
+          }
         </div>
+        }
+
+        @if(signupForm.errors?.['passwordMismatch'] &&
+          signupForm.get('password_confirmation')?.touched &&
+          signupForm.get('password_confirmation')?.valid) {
+        <div class="pl-error-msg">Passwords do not match.</div>
+        }
+
+        <div #captchaContainer class="d-flex justify-content-center"></div>
+        @if(isInvalid('recaptcha')) {
+        <div class="pl-error-msg">Please complete the captcha verification.</div>
+        }
+
+        @if(error) {
+        <div class="pl-alert pl-alert--danger">{{ error }}</div>
+        }
+
+        <button type="submit" class="pl-btn-success" [disabled]="signupForm.invalid || loading">
+          @if (loading) { <span class="pl-spinner"></span> } @else { Create Account }
+        </button>
+
+      </form>
+      }
+
     </div>
+
+    <!-- RIGHT : LOGIN CTA -->
+    <div class="auth-right">
+      <div class="auth-right-content">
+        <h2>Already have an account?</h2>
+        <p>Sign in to access your dashboard and continue managing your properties.</p>
+        <a [routerLink]="'/login'" class="pl-btn-outline">Sign In</a>
+      </div>
+    </div>
+
+  </div>
 </div>

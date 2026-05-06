@@ -26,6 +26,10 @@ export class ChatService extends BaseApiService {
     return this.get(`${this.endpoint}/chats`, params, { skipLoader: true });
   }
 
+  getUnreadCount(): Observable<{ count: number }> {
+    return this.get(`${this.endpoint}/unread-count`, undefined, { skipLoader: true });
+  }
+
   getChat(chatId: number): Observable<{ chat: ChatSummary }> {
     return this.get(`${this.endpoint}/chats/${chatId}`, undefined, { skipLoader: true });
   }

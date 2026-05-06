@@ -27,13 +27,18 @@ class ChatMessage extends Model
     protected $fillable = [
         'chat_id',
         'sender_id',
+        'receiver_id',
         'type',
         'body',
         'meta',
+        'delivered_at',
+        'read_at',
     ];
 
     protected $casts = [
         'meta' => 'array',
+        'delivered_at' => 'datetime',
+        'read_at' => 'datetime',
     ];
 
     public function chat(): BelongsTo

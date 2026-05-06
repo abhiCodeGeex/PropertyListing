@@ -133,8 +133,14 @@
 
             <div class="chat-bubble__meta">
               <span>{{ formatTimestamp(message.timestamp) }}</span>
-              @if (readState(message)) {
-                <span>{{ readState(message) }}</span>
+              @if (messageStatus(message); as status) {
+                <span class="chat-bubble__status" [class.chat-bubble__status--read]="status === 'read'">
+                  @if (status === 'sent') {
+                    ✔
+                  } @else {
+                    ✔✔
+                  }
+                </span>
               }
             </div>
           </article>

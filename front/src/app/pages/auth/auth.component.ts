@@ -8,7 +8,6 @@ import { AuthService } from '../../services/auth.service';
 import { FormConfigService } from '../../services/form-config.service';
 import { UsersService } from '../../services/users.service';
 import { ToasterService } from '../../services/toaster.service';
-import { FormFloatingDirective } from '@coreui/angular';
 import { FormErrorService } from '../../services/form-error.service';
 import { LoaderService } from '../../services/loder.service';
 
@@ -21,8 +20,7 @@ import { LoaderService } from '../../services/loder.service';
     FormsModule,
     ReactiveFormsModule,
     RouterLink,
-    DynamicFormComponent,
-    FormFloatingDirective
+    DynamicFormComponent
   ]
 })
 export class AuthComponent implements OnInit {

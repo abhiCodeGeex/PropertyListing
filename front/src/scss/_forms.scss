@@ -2,66 +2,117 @@
 
 :root {
   // Single source for vertical rhythm — adjust here to resize all fields at once
-  --pl-control-height: 2.75rem;
-  --pl-control-padding-x: 0.875rem;
-  --pl-control-padding-y: 0.45rem;
-  --pl-control-radius: 0.5rem;
-  --pl-control-font-size: 0.93rem;
-  --pl-textarea-min-height: 5.25rem;
+  --pl-control-height: 3.2rem;
+  --pl-control-padding-x: 1rem;
+  --pl-control-padding-y: 0.5rem;
+  --pl-control-radius: 12px;
+  --pl-control-font-size: 0.95rem;
+  --pl-textarea-min-height: 6rem;
+  --pl-input-bg: #ffffff;
+  --pl-input-border: #e2e8f0;
+  --pl-input-focus-border: #3b82f6;
+  --pl-input-focus-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  --pl-input-text: #1e293b;
+  --pl-input-placeholder: #94a3b8;
 }
 
-// Bootstrap / CoreUI text fields & selects
-.form-control:not(textarea),
+// Global Form Control Polishing
+.form-control,
 .form-select {
   min-height: var(--pl-control-height);
   padding: var(--pl-control-padding-y) var(--pl-control-padding-x);
   font-size: var(--pl-control-font-size);
+  font-weight: 500;
   line-height: 1.5;
+  color: var(--pl-input-text);
+  background-color: var(--pl-input-bg);
+  border: 1.5px solid var(--pl-input-border);
   border-radius: var(--pl-control-radius);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  appearance: none;
+
+  &::placeholder {
+    color: var(--pl-input-placeholder);
+    font-weight: 400;
+  }
+
+  &:focus {
+    color: var(--pl-input-text);
+    background-color: var(--pl-input-bg);
+    border-color: var(--pl-input-focus-border);
+    outline: 0;
+    box-shadow: var(--pl-input-focus-shadow);
+  }
+
+  &:disabled {
+    background-color: #f8fafc;
+    border-color: #f1f5f9;
+    color: #64748b;
+  }
+
+  &.is-invalid {
+    border-color: #ef4444;
+    &:focus {
+      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+    }
+  }
 }
 
 textarea.form-control {
   min-height: var(--pl-textarea-min-height);
   height: auto;
-  padding: 0.75rem var(--pl-control-padding-x);
+  padding: 0.875rem var(--pl-control-padding-x);
 }
 
-// Some screens use <select class="form-control">
-select.form-control {
-  min-height: var(--pl-control-height);
+// Floating labels — refined for industry-standard height and alignment
+.form-floating {
+  position: relative;
+
+  > .form-control,
+  > .form-select {
+    height: var(--pl-control-height);
+    min-height: var(--pl-control-height);
+    padding: 1.625rem var(--pl-control-padding-x) 0.625rem;
+  }
+
+  > label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    height: 100%;
+    padding: 1rem var(--pl-control-padding-x);
+    overflow: hidden;
+    text-align: start;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    pointer-events: none;
+    border: 1px solid transparent;
+    transform-origin: 0 0;
+    transition: opacity 0.1s ease-in-out, transform 0.1s ease-in-out;
+    color: var(--pl-input-placeholder);
+    font-weight: 500;
+  }
+
+  > .form-control:focus ~ label,
+  > .form-control:not(:placeholder-shown) ~ label,
+  > .form-select ~ label {
+    color: var(--pl-input-focus-border);
+    transform: scale(0.85) translateY(-0.75rem) translateX(0.15rem);
+    opacity: 0.85;
+  }
+
+  > .form-control:-webkit-autofill ~ label {
+    transform: scale(0.85) translateY(-0.75rem) translateX(0.15rem);
+  }
 }
 
-// Read-only blocks styled as controls (e.g. rent deed preview)
-.form-control.bg-white:not(input):not(select):not(textarea) {
-  min-height: var(--pl-control-height);
-  display: flex;
-  align-items: center;
-  padding: var(--pl-control-padding-y) var(--pl-control-padding-x);
-}
-
-// Input groups: align addons with control height
-.input-group > .form-control,
-.input-group > .form-select {
-  min-height: var(--pl-control-height);
-}
-
-.input-group-text {
-  min-height: var(--pl-control-height);
-  display: flex;
-  align-items: center;
-  border-radius: var(--pl-control-radius);
-}
-
-// Floating labels — match plain control height (CoreUI / Bootstrap)
-.form-floating > .form-control:not(textarea),
-.form-floating > .form-select {
-  height: var(--pl-control-height);
-  min-height: var(--pl-control-height);
-}
-
-.form-floating > textarea.form-control {
-  height: auto;
-  min-height: var(--pl-textarea-min-height);
+// Select arrows refinement
+.form-select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
 }
 
 // ng-select (property assign, users, rent deed)
@@ -70,80 +121,125 @@ select.form-control {
     min-height: var(--pl-control-height);
     border-radius: var(--pl-control-radius);
     align-items: center;
-    border-color: var(--pl-border, #dbe4f0);
+    border: 1.5px solid var(--pl-input-border) !important;
+    background: #fff !important;
+    padding: 0 0.5rem;
+    transition: all 0.2s ease;
+
+    .ng-value-container {
+      padding-left: 0.5rem;
+    }
   }
 
   &.ng-select-focused:not(.ng-select-open) > .ng-select-container {
-    box-shadow: 0 0 0 0.2rem rgba(29, 78, 216, 0.12);
+    border-color: var(--pl-input-focus-border) !important;
+    box-shadow: var(--pl-input-focus-shadow) !important;
+  }
+
+  &.ng-select-opened > .ng-select-container {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .ng-dropdown-panel {
+    border: 1.5px solid var(--pl-input-focus-border);
+    border-top: 0;
+    border-bottom-left-radius: var(--pl-control-radius);
+    border-bottom-right-radius: var(--pl-control-radius);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+
+    .ng-dropdown-panel-items {
+      .ng-option {
+        padding: 0.75rem 1rem;
+        font-weight: 500;
+        &.ng-option-selected {
+          background-color: var(--pl-primary-soft);
+          color: var(--pl-primary);
+        }
+        &.ng-option-marked {
+          background-color: #f8fafc;
+        }
+      }
+    }
   }
 }
 
-.ng-select.ng-select-multiple .ng-select-container {
-  min-height: var(--pl-control-height);
-  padding-top: 0.2rem;
-  padding-bottom: 0.2rem;
-}
-
-.ng-select.ng-select-multiple .ng-select-container .ng-value-container {
-  padding-top: 0;
-  padding-bottom: 0;
-}
-
-// Angular Material form fields / datepickers
+// Angular Material form fields / datepickers — styled to match our design
 .mat-mdc-form-field {
   width: 100%;
+
+  .mat-mdc-text-field-wrapper {
+    min-height: var(--pl-control-height) !important;
+    height: auto !important;
+    border-radius: var(--pl-control-radius) !important;
+    background: #fff !important;
+    transition: all 0.2s ease;
+    padding-top: 0 !important;
+  }
+
+  .mat-mdc-form-field-flex {
+    height: var(--pl-control-height) !important;
+    align-items: center !important;
+  }
+
+  // Style the outline border to match our design system
+  .mdc-notched-outline__leading,
+  .mdc-notched-outline__notch,
+  .mdc-notched-outline__trailing {
+    border-color: var(--pl-input-border) !important;
+  }
+
+  .mdc-notched-outline__leading {
+    border-radius: var(--pl-control-radius) 0 0 var(--pl-control-radius) !important;
+    min-width: var(--pl-control-radius) !important;
+  }
+
+  .mdc-notched-outline__trailing {
+    border-radius: 0 var(--pl-control-radius) var(--pl-control-radius) 0 !important;
+  }
+
+  &.mat-focused {
+    .mdc-notched-outline__leading,
+    .mdc-notched-outline__notch,
+    .mdc-notched-outline__trailing {
+      border-color: var(--pl-input-focus-border) !important;
+      border-width: 1.5px !important;
+    }
+  }
+
+  // Label (mat-label)
+  .mdc-floating-label {
+    color: var(--pl-input-placeholder) !important;
+    font-size: var(--pl-control-font-size) !important;
+    font-weight: 500 !important;
+  }
+
+  .mdc-floating-label--float-above {
+    color: var(--pl-input-focus-border) !important;
+  }
+
+  input.mat-mdc-input-element {
+    font-size: var(--pl-control-font-size) !important;
+    font-weight: 500 !important;
+    color: var(--pl-input-text) !important;
+    caret-color: var(--pl-input-focus-border) !important;
+  }
+
+  .mat-mdc-form-field-infix {
+    padding: 0 !important;
+    min-height: 0 !important;
+    width: auto !important;
+    display: flex;
+    align-items: center;
+  }
+
+  // Hide the subscript wrapper (extra space below field)
+  .mat-mdc-form-field-subscript-wrapper {
+    display: none !important;
+  }
 }
 
-.mat-mdc-form-field .mat-mdc-text-field-wrapper {
-  min-height: var(--pl-control-height);
-  height: var(--pl-control-height);
-  border-radius: var(--pl-control-radius) !important;
-  background: #fff;
-}
-
-.mat-mdc-form-field .mat-mdc-form-field-flex {
-  height: 100%;
-  align-items: center;
-}
-
-.mat-mdc-form-field .mat-mdc-form-field-infix {
-  min-height: 0;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  display: flex;
-  align-items: center;
-}
-
-.mat-mdc-form-field input.mat-mdc-input-element,
-.mat-mdc-form-field .mat-date-range-input-inner {
-  height: calc(var(--pl-control-height) - 2px);
-  padding: 0;
-  font-size: var(--pl-control-font-size);
-  line-height: calc(var(--pl-control-height) - 2px);
-}
-
-.mat-mdc-form-field .mat-mdc-icon-button {
-  width: calc(var(--pl-control-height) - 0.25rem);
-  height: calc(var(--pl-control-height) - 0.25rem);
-  padding: 0;
-}
-
-.mat-mdc-form-field .mat-mdc-icon-button .mat-mdc-button-touch-target {
-  width: calc(var(--pl-control-height) - 0.25rem);
-  height: calc(var(--pl-control-height) - 0.25rem);
-}
-
-.mat-mdc-form-field .mdc-notched-outline__leading,
-.mat-mdc-form-field .mdc-notched-outline__notch,
-.mat-mdc-form-field .mdc-notched-outline__trailing {
-  border-color: var(--pl-border, #dbe4f0) !important;
-}
-
-.mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,
-.mat-mdc-form-field.mat-focused .mdc-notched-outline__notch,
-.mat-mdc-form-field.mat-focused .mdc-notched-outline__trailing {
-  border-color: var(--pl-primary, #1d4ed8) !important;
-}
 
 // Stripe card mount (keeps box proportional to other fields)
 #card-element.form-control,
@@ -151,5 +247,6 @@ select.form-control {
   min-height: var(--pl-control-height);
   display: flex;
   align-items: center;
-  padding: 0.5rem 0.75rem;
+  padding: 0 1rem;
 }
+

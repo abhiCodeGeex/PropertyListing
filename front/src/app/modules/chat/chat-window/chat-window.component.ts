@@ -124,13 +124,18 @@ export class ChatWindowComponent implements OnChanges, AfterViewChecked {
       : date.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
-  readState(message: ChatMessage): string {
+  messageStatus(message: ChatMessage): 'sent' | 'delivered' | 'read' | null {
     if (!this.isMine(message)) {
-      return '';
+      return null;
     }
 
-    const recipientReads = message.read_by_ids.filter(id => id !== this.currentUserId);
-    return recipientReads.length > 0 ? 'Seen' : 'Sent';
+    if (message.read_at) {
+      return 'read';
+    }
+    if (message.delivered_at) {
+      return 'delivered';
+    }
+    return 'sent';
   }
 
   participantLabel(participant: ChatSummary['participants'][number]): string {

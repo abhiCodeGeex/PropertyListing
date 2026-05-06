@@ -47,6 +47,8 @@ class MessageSent implements ShouldBroadcastNow
             'message' => $message->body,
             'type' => $message->type,
             'timestamp' => optional($message->created_at)->toIso8601String(),
+            'delivered_at' => optional($message->delivered_at)->toIso8601String(),
+            'read_at' => optional($message->read_at)->toIso8601String(),
             'attachments' => $message->attachments->map(fn ($attachment) => [
                 'id' => $attachment->id,
                 'original_name' => $attachment->original_name,

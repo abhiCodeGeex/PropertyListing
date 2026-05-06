@@ -75,7 +75,7 @@ const NAV_CONFIG: Array<INavData & { roles?: string[] }> = [
 /**
  * Filter navigation based on roles
  */
-export function buildNavItems(userRoles: string[]): INavData[] {
+export function buildNavItems(userRoles: string[], unreadChatCount: number = 0): INavData[] {
   return NAV_CONFIG
     .filter(item => !item.roles || hasAnyRole(userRoles, item.roles))
     .map(item => {
@@ -85,9 +85,14 @@ export function buildNavItems(userRoles: string[]): INavData[] {
           : '/maintenance/requests'
         : item.url;
 
+      const badgeText = unreadChatCount > 99 ? '99+' : String(unreadChatCount);
+
       return {
         ...item,
         url: nextUrl,
+        badge: item.name === 'Chat' && unreadChatCount > 0
+          ? { color: 'danger', text: badgeText }
+          : undefined,
         iconComponent: item.iconComponent ? { ...item.iconComponent } : undefined,
       };
     });

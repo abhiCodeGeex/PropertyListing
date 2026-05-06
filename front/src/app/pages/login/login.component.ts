@@ -7,8 +7,7 @@ import {
   ButtonDirective,
   FormControlDirective,
   FormFloatingDirective,
-  InputGroupComponent,
-  InputGroupTextDirective,
+  FormSelectDirective,
 } from '@coreui/angular';
 import { IconDirective } from '@coreui/icons-angular';
 import { ToasterService } from '../../services/toaster.service';
@@ -18,7 +17,7 @@ import { FormErrorService } from '../../services/form-error.service';
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
-  imports: [ReactiveFormsModule, FormsModule, CommonModule, InputGroupComponent, InputGroupTextDirective, IconDirective, FormControlDirective, ButtonDirective, RouterLink, FormFloatingDirective]
+  imports: [ReactiveFormsModule, FormsModule, CommonModule, IconDirective, FormControlDirective, FormSelectDirective, ButtonDirective, RouterLink, FormFloatingDirective]
 })
 export class LoginComponent implements OnInit {
   loading = false;

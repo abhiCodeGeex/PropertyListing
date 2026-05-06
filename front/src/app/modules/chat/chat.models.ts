@@ -33,6 +33,8 @@ export interface ChatMessage {
   type: 'text' | 'file' | 'image';
   timestamp: string;
   updated_at?: string | null;
+  delivered_at?: string | null;
+  read_at?: string | null;
   read_by_ids: number[];
   attachments: ChatAttachment[];
 }

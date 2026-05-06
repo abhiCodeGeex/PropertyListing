@@ -24,6 +24,7 @@ export class SignupComponent implements AfterViewChecked {
   roles: any[] = [];
   error: string | null = null;
   captchaRendered = false;
+  loading = false;
   @ViewChild('captchaContainer', { static: false }) captchaContainer!: ElementRef;
   private readonly backendToFormFieldMap: Record<string, string> = {
     name: 'name',
@@ -115,12 +116,15 @@ export class SignupComponent implements AfterViewChecked {
       return;
     }
     const payload = { ...this.signupForm.value };
+    this.loading = true;
     this.usersService.register(payload).subscribe({
       next: () => {
+        this.loading = false;
         this.toast.showSuccess('Registered successfully');
         this.router.navigate(['/login']);
       },
       error: (err) => {
+        this.loading = false;
         if (err.status === 422 && err.error?.errors) {
           this.formErrorService.applyServerErrors(this.signupForm, err.error.errors, this.backendToFormFieldMap, 'serverError');
           this.error = 'Please correct the highlighted fields.';

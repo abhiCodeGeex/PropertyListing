@@ -1,119 +1,109 @@
-<form [formGroup]="formGroup" (ngSubmit)="submit()">
+<form [formGroup]="formGroup" (ngSubmit)="submit()" class="auth-form" novalidate>
 
     @for (field of formConfig?.fields; track field.name) {
-    <div class="mb-3 field-block">
+    <div class="pl-field">
+        <label [for]="'f-' + field.name" class="pl-label"
+            [class.required-label]="isRequiredField(field)">
+            {{ field.label }}
+        </label>
 
         <!-- TEXT / EMAIL / PASSWORD -->
         @if (field.type !== 'select' && field.type !== 'recaptcha') {
-        <div [cFormFloating]="true">
-            <input cFormControl [type]="field.type" [formControlName]="field.name" [placeholder]="field.placeholder"
-                [autocomplete]="field.type === 'password' ? 'new-password' : 'off'"
-                [ngClass]="{ 'is-invalid': isInvalid(field.name) }" />
-
-            <label cLabel [class.required-label]="isRequiredField(field)">{{ field.label }}</label>
-        </div>
+        <input
+            [id]="'f-' + field.name"
+            class="pl-input"
+            [class.is-invalid]="isInvalid(field.name)"
+            [type]="field.type"
+            [formControlName]="field.name"
+            [placeholder]="field.placeholder || ''"
+            [autocomplete]="field.type === 'password' ? 'new-password' : 'off'" />
         }
 
         <!-- SELECT -->
         @if (field.type === 'select') {
-        <div [cFormFloating]="true">
-            <select cSelect [formControlName]="field.name" [ngClass]="{ 'is-invalid': isInvalid(field.name) }">
-
-                <option value="" disabled>
-                    Select {{ field.label }}
-                </option>
-
-                @for (r of roles; track r.name) {
-                <option [value]="r.name">
-                    {{ r.name | titlecase }}
-                </option>
-                }
-            </select>
-
-            <label cLabel [class.required-label]="isRequiredField(field)">{{ field.label }}</label>
-        </div>
+        <select
+            [id]="'f-' + field.name"
+            class="pl-input"
+            [class.is-invalid]="isInvalid(field.name)"
+            [formControlName]="field.name">
+            <option value="" disabled>Select {{ field.label }}</option>
+            @for (r of roles; track r.name) {
+            <option [value]="r.name">{{ r.name | titlecase }}</option>
+            }
+        </select>
         }
 
-        <!-- RECAPTCHA -->
-        @if (field.type === 'recaptcha') {
-        <div #captchaContainer class="mb-2"></div>
 
-        @if (isInvalid('recaptcha')) {
-        <div class="text-danger">
-            <small>Captcha verification is required.</small>
-        </div>
-        }
-        }
-
-        @if (field.name === 'password') {
-        <div class="form-text">Use a strong password that you do not use elsewhere.</div>
+        @if (field.name === 'password' && formConfig?.form === 'signup') {
+        <div class="pl-field-hint">Use a strong password that you do not use elsewhere.</div>
         }
 
         @if (field.name === 'password_confirmation') {
-        <div class="form-text">Re-enter the same password to confirm.</div>
+        <div class="pl-field-hint">Re-enter the same password to confirm.</div>
         }
 
         @if (field.name === 'role') {
-        <div class="form-text">Choose the primary role you want to use while signing in.</div>
+        <div class="pl-field-hint">Choose the primary role you want to use while signing in.</div>
+        }
+
+        @if (field.name === 'password' && formConfig?.form === 'login') {
+        <div class="pl-field-row">
+            <a [routerLink]="'/forget-password'" class="pl-link-sm">Forgot password?</a>
+        </div>
         }
 
         <!-- FIELD VALIDATION ERRORS -->
         @if (getFieldErrorMessage(field); as fieldError) {
-        <div class="invalid-feedback d-block mt-1">
-            <small>{{ fieldError }}</small>
-        </div>
+        <div class="pl-error-msg">{{ fieldError }}</div>
         }
-
     </div>
     }
 
-    <!-- SERVER ERROR -->
-    @if (error) {
-    <div class="alert alert-danger">
-        {{ error }}
-
-        @if (unverified) {
-        <a href="javascript:void(0)" class="ms-2 text-decoration-underline" (click)="resendVerification()">
-            Resend verification email
-        </a>
+    <!-- RECAPTCHA (Always show on signup) -->
+    @if (formConfig?.form === 'signup') {
+    <div class="pl-field">
+        <div #captchaContainer class="d-flex justify-content-center mt-2 mb-1"></div>
+        @if (isInvalid('recaptcha')) {
+        <div class="pl-error-msg">Captcha verification is required.</div>
         }
     </div>
     }
 
     <!-- PASSWORD MISMATCH -->
     @if (getGroupErrorMessage(); as groupError) {
-    <div class="invalid-feedback d-block mb-3">
-        <small>{{ groupError }}</small>
+    <div class="pl-error-msg">{{ groupError }}</div>
+    }
+
+    <!-- SERVER ERROR -->
+    @if (error) {
+    <div class="pl-alert pl-alert--danger">
+        <span>{{ error }}</span>
+        @if (unverified) {
+        <button type="button" class="pl-link ms-2" (click)="resendVerification()">
+            Resend verification email
+        </button>
+        }
     </div>
     }
 
     <!-- SUBMIT -->
-    <div class="d-grid mt-2">
-        <button cButton color="primary" type="submit" [disabled]="loading">
-
-            {{ formConfig?.form | titlecase }}
-        </button>
-    </div>
+    <button type="submit" [class]="formConfig?.form === 'login' ? 'pl-btn-primary mt-2' : 'pl-btn-success mt-2'" [disabled]="loading || formGroup.invalid">
+        @if (loading) { <span class="pl-spinner"></span> } @else { {{ formConfig?.form === 'login' ? 'Sign In' : 'Create Account' }} }
+    </button>
 
     <!-- LOGIN EXTRAS -->
     @if (formConfig?.form === 'login') {
+    <div class="pl-divider">or continue with</div>
 
-    <div class="d-grid mt-1">
-        <a cButton color="link" type="button" [routerLink]="'/forget-password'">
-            Forgot password?
-        </a>
-    </div>
-
-    <!-- SOCIAL LOGIN -->
-    <div class="text-center mt-3">
-        <p>Or login with</p>
-
-        <button cButton color="danger" class="me-2" type="button" (click)="socialLogin('google')">
-
-            <svg cIcon name="cibGoogle"></svg>
-            Google
-        </button>
-    </div>
+    <button type="button" class="pl-btn-social" (click)="socialLogin('google')">
+        <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        Continue with Google
+    </button>
     }
 
 </form>

@@ -8,6 +8,7 @@ import { ChatWindowComponent } from './chat-window/chat-window.component';
 import { GroupCreateComponent } from './group-create/group-create.component';
 import { ChatRealtimeService } from './chat-realtime.service';
 import { ChatService } from './chat.service';
+import { ChatUnreadService } from './chat-unread.service';
 import {
   ChatContextResponse,
   ChatMessage,
@@ -36,6 +37,7 @@ export class ChatPageComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly chatService = inject(ChatService);
   private readonly realtime = inject(ChatRealtimeService);
+  private readonly chatUnread = inject(ChatUnreadService);
   private readonly toast = inject(ToasterService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -62,6 +64,7 @@ export class ChatPageComponent implements OnInit {
 
   private readonly typingTimeouts = new Map<number, number>();
   private readonly typingRequestTimestamps = new Map<number, number>();
+  private pendingRefreshTimer: number | null = null;
 
   ngOnInit(): void {
     this.realtime.connect();
@@ -69,6 +72,7 @@ export class ChatPageComponent implements OnInit {
     this.bindPollingFallback();
     this.loadContext();
     this.loadChats();
+    this.chatUnread.refresh();
 
     this.route.paramMap
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -338,7 +342,7 @@ export class ChatPageComponent implements OnInit {
   private bindPollingFallback(): void {
     interval(3000)
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.refreshSelectedChatMessages());
+      .subscribe(() => this.scheduleRefreshSelectedChatMessages());
   }
 
   private loadContext(): void {
@@ -427,7 +431,9 @@ export class ChatPageComponent implements OnInit {
             && Number(message.sender_id) !== Number(this.currentUserId() ?? 0)
           );
 
-          this.messages = mergedMessages;
+          if (!this.areMessageCollectionsEqual(this.messages, mergedMessages)) {
+            this.messages = mergedMessages;
+          }
 
           if (previousMessageCount === 0) {
             this.hasMoreMessages = response.has_more;
@@ -473,6 +479,7 @@ export class ChatPageComponent implements OnInit {
           if (chat) {
             chat.unread_count = 0;
           }
+          this.chatUnread.refresh();
         },
         error: () => undefined
       });
@@ -497,6 +504,7 @@ export class ChatPageComponent implements OnInit {
             this.markVisibleMessagesRead();
           }
         }
+        this.chatUnread.refresh();
         break;
       case 'chat.updated':
         this.applyChatUpdate(event.chatId, event.payload);
@@ -553,20 +561,23 @@ export class ChatPageComponent implements OnInit {
       return;
     }
 
-    this.messages = this.messages.map(message => {
+    const readAt = payload?.read_at ?? new Date().toISOString();
+    for (const message of this.messages) {
       if (message.id > messageId || Number(message.sender_id) !== Number(this.currentUserId() ?? 0)) {
-        return message;
+        continue;
       }
 
-      if (message.read_by_ids.includes(readById)) {
-        return message;
-      }
+      const readByIds = message.read_by_ids.includes(readById)
+        ? message.read_by_ids
+        : [...message.read_by_ids, readById];
 
-      return {
+      this.updateMessageState(message.id, {
         ...message,
-        read_by_ids: [...message.read_by_ids, readById]
-      };
-    });
+        delivered_at: message.delivered_at ?? readAt,
+        read_at: readAt,
+        read_by_ids: readByIds,
+      });
+    }
   }
 
   private applyTyping(payload: any): void {
@@ -643,7 +654,7 @@ export class ChatPageComponent implements OnInit {
   }
 
   private appendMessage(message: ChatMessage): void {
-    this.messages = this.mergeMessages([...this.messages, this.normalizeMessage(message)]);
+    this.updateMessageState(message.id, message);
   }
 
   private mergeMessages(messages: ChatMessage[]): ChatMessage[] {
@@ -655,7 +666,8 @@ export class ChatPageComponent implements OnInit {
       if (!id) {
         continue;
       }
-      map.set(id, normalized);
+      const existing = map.get(id);
+      map.set(id, existing ? this.mergeMessageState(existing, normalized) : normalized);
     }
 
     return Array.from(map.values()).sort((left, right) => Number(left.id) - Number(right.id));
@@ -680,6 +692,8 @@ export class ChatPageComponent implements OnInit {
       type: payload.type ?? 'text',
       timestamp: payload.timestamp ?? payload.created_at ?? new Date().toISOString(),
       updated_at: payload.updated_at ?? null,
+      delivered_at: payload.delivered_at ?? null,
+      read_at: payload.read_at ?? null,
       read_by_ids: Array.isArray(payload.read_by_ids)
         ? payload.read_by_ids
             .map((value: any) => Number(value) || 0)
@@ -697,6 +711,105 @@ export class ChatPageComponent implements OnInit {
           }))
         : [],
     };
+  }
+
+  private scheduleRefreshSelectedChatMessages(): void {
+    if (this.pendingRefreshTimer !== null) {
+      window.clearTimeout(this.pendingRefreshTimer);
+    }
+
+    this.pendingRefreshTimer = window.setTimeout(() => {
+      this.pendingRefreshTimer = null;
+      this.refreshSelectedChatMessages();
+    }, 350);
+  }
+
+  private updateMessageState(messageId: number, newData: ChatMessage): void {
+    const nextMessage = this.normalizeMessage(newData);
+    const index = this.messages.findIndex(message => Number(message.id) === Number(messageId));
+
+    if (index === -1) {
+      this.messages = this.mergeMessages([...this.messages, nextMessage]);
+      return;
+    }
+
+    const current = this.messages[index];
+    const merged = this.mergeMessageState(current, nextMessage);
+
+    if (this.areMessagesEqual(current, merged)) {
+      return;
+    }
+
+    const next = [...this.messages];
+    next[index] = merged;
+    this.messages = next;
+  }
+
+  private mergeMessageState(current: ChatMessage, incoming: ChatMessage): ChatMessage {
+    const currentPriority = this.messageStatePriority(current);
+    const incomingPriority = this.messageStatePriority(incoming);
+    const winner = incomingPriority >= currentPriority ? incoming : current;
+    const loser = incomingPriority >= currentPriority ? current : incoming;
+
+    return {
+      ...loser,
+      ...winner,
+      read_by_ids: Array.from(new Set([...(current.read_by_ids ?? []), ...(incoming.read_by_ids ?? [])])),
+      delivered_at: this.pickTimestamp(current.delivered_at, incoming.delivered_at),
+      read_at: this.pickTimestamp(current.read_at, incoming.read_at),
+    };
+  }
+
+  private messageStatePriority(message: ChatMessage): number {
+    if (message.read_at) {
+      return 3;
+    }
+    if (message.delivered_at) {
+      return 2;
+    }
+    return 1;
+  }
+
+  private pickTimestamp(current?: string | null, incoming?: string | null): string | null {
+    if (!current && !incoming) {
+      return null;
+    }
+    if (!current) {
+      return incoming ?? null;
+    }
+    if (!incoming) {
+      return current;
+    }
+
+    return new Date(incoming).getTime() >= new Date(current).getTime() ? incoming : current;
+  }
+
+  private areMessageCollectionsEqual(left: ChatMessage[], right: ChatMessage[]): boolean {
+    if (left.length !== right.length) {
+      return false;
+    }
+
+    for (let index = 0; index < left.length; index++) {
+      if (!this.areMessagesEqual(left[index], right[index])) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  private areMessagesEqual(left: ChatMessage, right: ChatMessage): boolean {
+    return left.id === right.id
+      && left.chat_id === right.chat_id
+      && left.sender_id === right.sender_id
+      && left.message === right.message
+      && left.type === right.type
+      && left.timestamp === right.timestamp
+      && left.updated_at === right.updated_at
+      && left.delivered_at === right.delivered_at
+      && left.read_at === right.read_at
+      && JSON.stringify(left.read_by_ids) === JSON.stringify(right.read_by_ids)
+      && JSON.stringify(left.attachments) === JSON.stringify(right.attachments);
   }
 
   private upsertChat(chat: ChatSummary): void {

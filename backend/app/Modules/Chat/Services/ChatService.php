@@ -69,6 +69,26 @@ class ChatService
         ];
     }
 
+    public function markMessagesDelivered(User $actor, Chat $chat): void
+    {
+        ChatMessage::query()
+            ->where('chat_id', $chat->id)
+            ->where('sender_id', '!=', $actor->id)
+            ->whereNull('deleted_at')
+            ->whereNull('delivered_at')
+            ->update([
+                'delivered_at' => now(),
+            ]);
+    }
+
+    public function unreadCount(User $actor): int
+    {
+        return (int) ChatParticipant::query()
+            ->where('user_id', $actor->id)
+            ->whereNull('deleted_at')
+            ->sum('unread_count');
+    }
+
     public function createPrivateChat(User $actor, int $recipientId): Chat
     {
         $recipient = User::query()->findOrFail($recipientId);
@@ -246,9 +266,19 @@ class ChatService
         $this->validateMessagePayload($type, $body, $files);
 
         $message = DB::transaction(function () use ($actor, $chat, $type, $body, $files) {
+            $receiverId = null;
+            if ($chat->type === Chat::TYPE_PRIVATE) {
+                $receiverId = ChatParticipant::query()
+                    ->where('chat_id', $chat->id)
+                    ->where('user_id', '!=', $actor->id)
+                    ->whereNull('deleted_at')
+                    ->value('user_id');
+            }
+
             $message = ChatMessage::query()->create([
                 'chat_id' => $chat->id,
                 'sender_id' => $actor->id,
+                'receiver_id' => $receiverId ? (int) $receiverId : null,
                 'type' => $type,
                 'body' => $body,
                 'meta' => [
@@ -344,6 +374,28 @@ class ChatService
                     ['read_at', 'updated_at']
                 );
             }
+
+            ChatMessage::query()
+                ->where('chat_id', $chat->id)
+                ->where('sender_id', '!=', $actor->id)
+                ->where('id', '>', $currentLastRead)
+                ->where('id', '<=', $newLastRead)
+                ->whereNull('deleted_at')
+                ->whereNull('read_at')
+                ->update([
+                    'read_at' => $readAt,
+                ]);
+
+            ChatMessage::query()
+                ->where('chat_id', $chat->id)
+                ->where('sender_id', '!=', $actor->id)
+                ->where('id', '>', $currentLastRead)
+                ->where('id', '<=', $newLastRead)
+                ->whereNull('deleted_at')
+                ->whereNull('delivered_at')
+                ->update([
+                    'delivered_at' => $readAt,
+                ]);
 
             $remainingUnread = ChatMessage::query()
                 ->where('chat_id', $chat->id)

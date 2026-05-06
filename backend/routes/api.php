@@ -224,6 +224,7 @@ Route::middleware('auth:api')->group(function () {
 
     Route::prefix('v1/chat')->group(function () {
         Route::get('context', [ChatController::class, 'context']);
+        Route::get('unread-count', [ChatController::class, 'unreadCount']);
         Route::post('presence/online', [ChatController::class, 'presenceOnline']);
         Route::post('presence/offline', [ChatController::class, 'presenceOffline']);
         Route::get('chats', [ChatController::class, 'index']);

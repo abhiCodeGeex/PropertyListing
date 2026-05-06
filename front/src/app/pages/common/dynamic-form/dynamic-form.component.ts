@@ -10,13 +10,6 @@ import {
 } from '@angular/core';
 import { AbstractControl, FormGroup, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule, TitleCasePipe } from '@angular/common';
-import {
-  ButtonDirective,
-  FormControlDirective,
-  FormFloatingDirective,
-  FormSelectDirective
-} from '@coreui/angular';
-import { IconDirective } from '@coreui/icons-angular';
 import { RouterLink } from '@angular/router';
 
 declare const grecaptcha: any;
@@ -29,12 +22,7 @@ declare const grecaptcha: any;
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    IconDirective,
-    FormControlDirective,
-    ButtonDirective,
-    FormFloatingDirective,
     TitleCasePipe,
-    FormSelectDirective,
     RouterLink
   ],
 })

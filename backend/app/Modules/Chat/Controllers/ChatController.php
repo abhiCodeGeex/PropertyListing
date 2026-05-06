@@ -46,6 +46,7 @@ class ChatController extends Controller
     public function messages(Request $request, Chat $chat): JsonResponse
     {
         $this->authorize('view', $chat);
+        $this->service->markMessagesDelivered($request->user(), $chat);
 
         $data = $this->service->getMessages($chat, [
             'before_id' => $request->input('before_id'),
@@ -197,6 +198,13 @@ class ChatController extends Controller
         );
     }
 
+    public function unreadCount(Request $request): JsonResponse
+    {
+        return response()->json([
+            'count' => $this->service->unreadCount($request->user()),
+        ]);
+    }
+
     public function presenceOnline(Request $request): JsonResponse
     {
         $this->service->markPresenceOnline($request->user());
@@ -311,6 +319,8 @@ class ChatController extends Controller
             'type' => $message->type,
             'timestamp' => optional($message->created_at)->toIso8601String(),
             'updated_at' => optional($message->updated_at)->toIso8601String(),
+            'delivered_at' => optional($message->delivered_at)->toIso8601String(),
+            'read_at' => optional($message->read_at)->toIso8601String(),
             'read_by_ids' => $message->reads
                 ->pluck('user_id')
                 ->map(fn ($id) => (int) $id)
