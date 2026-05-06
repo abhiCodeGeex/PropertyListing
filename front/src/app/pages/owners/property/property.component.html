@@ -69,6 +69,15 @@
                             }
                         </div>
                     </div>
+
+                    @if (property.media?.length) {
+                    <div class="property-media-inline">
+                        <button cButton color="info" variant="outline" size="sm"
+                            (click)="openPropertyMediaPreview(property)">
+                            View Added Media ({{ property.media.length }})
+                        </button>
+                    </div>
+                    }
                 </div>
 
                 <div class="entity-card__footer d-flex justify-content-between align-items-center">
@@ -252,6 +261,16 @@
                     <label>Property Media (Images / Documents)</label>
                     <input type="file" class="form-control" multiple (change)="onMediaSelected($event)" accept="image/*,.pdf,.doc,.docx" />
                     <div class="form-text">Upload visuals/docs for semi or fully furnished properties.</div>
+                    @if (selectedMediaFiles.length) {
+                    <div class="selected-media-preview mt-2">
+                        @for (file of selectedMediaFiles; track file.name + $index; let i = $index) {
+                        <div class="selected-media-item">
+                            <span class="text-truncate">{{ file.name }}</span>
+                            <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeSelectedMedia(i)">Remove</button>
+                        </div>
+                        }
+                    </div>
+                    }
                 </div>
                 }
 
@@ -387,3 +406,30 @@
 </app-confirm-modal>
 <app-property-tenant-assign (tenantAssigned)="onTenantAssigned()"></app-property-tenant-assign>
 <app-property-manager-assign (managerAssigned)="onManagerAssigned()"></app-property-manager-assign>
+
+<c-modal [visible]="mediaPreviewVisible" (visibleChange)="mediaPreviewVisible = $event" size="lg">
+    <c-modal-header>
+        <h5 cModalTitle>{{ mediaPreviewTitle }} - Added Media</h5>
+        <button cButtonClose (click)="mediaPreviewVisible = false"></button>
+    </c-modal-header>
+    <c-modal-body>
+        @if (!mediaPreviewItems.length) {
+        <p class="text-muted mb-0">No media available.</p>
+        } @else {
+        <div class="property-media-grid">
+            @for (item of mediaPreviewItems; track item.url) {
+            <a [href]="item.url" target="_blank" rel="noopener" class="property-media-card">
+                @if (item.isImage) {
+                <img [src]="item.url" [alt]="item.name" />
+                } @else {
+                <div class="property-media-file">
+                    <i class="bi bi-file-earmark-text"></i>
+                </div>
+                }
+                <span>{{ item.name }}</span>
+            </a>
+            }
+        </div>
+        }
+    </c-modal-body>
+</c-modal>

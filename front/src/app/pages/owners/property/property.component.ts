@@ -79,6 +79,9 @@ export class PropertyComponent implements OnInit, OnDestroy {
   filterRole: string | null = null;
   filterUserId: string | null = null;
   openDropdownId: number | null = null;
+  mediaPreviewVisible = false;
+  mediaPreviewTitle = '';
+  mediaPreviewItems: Array<{ url: string; name: string; isImage: boolean }> = [];
 
   propertyTypes = ['Residential', 'Commercial'];
   furnishingTypes = ['Unfurnished', 'Semi-Furnished', 'Fully-Furnished'];
@@ -228,6 +231,7 @@ export class PropertyComponent implements OnInit, OnDestroy {
           manager_id: p.manager_id,
           manager: p.manager ?? null,
           tenants: Array.isArray(p.tenants) ? p.tenants : [],
+          media: Array.isArray(p.media) ? p.media : [],
         }));
 
         this.totalPages = res.last_page;
@@ -503,6 +507,28 @@ export class PropertyComponent implements OnInit, OnDestroy {
   onMediaSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     this.selectedMediaFiles = Array.from(input.files || []);
+  }
+
+  removeSelectedMedia(index: number) {
+    this.selectedMediaFiles = this.selectedMediaFiles.filter((_, i) => i !== index);
+  }
+
+  openPropertyMediaPreview(property: Property): void {
+    const media = (property.media ?? [])
+      .map((item: any) => {
+        const url = item?.url || item?.file_url || item?.file;
+        const name = item?.name || item?.original_name || (typeof url === 'string' ? url.split('/').pop() : 'Media');
+        return {
+          url,
+          name,
+          isImage: typeof url === 'string' && /\.(png|jpe?g|gif|webp|svg)$/i.test(url)
+        };
+      })
+      .filter((item: any) => !!item.url);
+
+    this.mediaPreviewItems = media;
+    this.mediaPreviewTitle = property.propertyName;
+    this.mediaPreviewVisible = true;
   }
 
   shouldShowMediaSection(): boolean {
