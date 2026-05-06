@@ -11,6 +11,7 @@ import { ToasterService } from '../../services/toaster.service';
 import { WebsocketService } from '../../services/websocket.service';
 import { ConfirmModalComponent } from '../common/confirm-modal/confirm-modal.component';
 import { formatAppCurrency } from '../../shared/utils/currency.util';
+import { ButtonCloseDirective, ModalBodyComponent, ModalComponent, ModalHeaderComponent, ModalTitleDirective } from '@coreui/angular';
 
 @Component({
   templateUrl: 'dashboard.component.html',
@@ -20,7 +21,12 @@ import { formatAppCurrency } from '../../shared/utils/currency.util';
     RentSubscriptionComponent,
     OverduePaymentComponent,
     SecurityDepositeComponent,
-    ConfirmModalComponent
+    ConfirmModalComponent,
+    ModalComponent,
+    ModalHeaderComponent,
+    ModalTitleDirective,
+    ModalBodyComponent,
+    ButtonCloseDirective
   ]
 })
 export class DashboardComponent implements OnInit, OnDestroy {
@@ -62,6 +68,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   selectedProperty: any = null;
   showConfirmModal = false;
   expandedPropertyDetails = new Set<number>();
+  mediaPreviewVisible = false;
+  mediaPreviewTitle = '';
+  mediaPreviewItems: Array<{ url: string; name: string; isImage: boolean }> = [];
   private websocketUnsubscribers: Array<() => void> = [];
 
   constructor(
@@ -178,6 +187,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
       },
       'Failed to load assigned properties'
     );
+  }
+
+  openPropertyMediaPreview(property: any): void {
+    const media = (property?.media ?? [])
+      .map((item: any) => {
+        const url = item?.url || item?.file_url || item?.file;
+        const name = item?.name || item?.original_name || (typeof url === 'string' ? url.split('/').pop() : 'Media');
+        return { url, name, isImage: typeof url === 'string' && /\.(png|jpe?g|gif|webp|svg)$/i.test(url) };
+      })
+      .filter((item: any) => !!item.url);
+
+    this.mediaPreviewItems = media;
+    this.mediaPreviewTitle = property?.property_name || 'Property';
+    this.mediaPreviewVisible = true;
   }
 
   getSecurityApprovals(): void {

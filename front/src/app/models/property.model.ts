@@ -4,6 +4,15 @@ export interface PropertyUser {
   email?: string;
 }
 
+export interface PropertyMedia {
+  id?: number;
+  url?: string;
+  file?: string;
+  file_url?: string;
+  name?: string;
+  original_name?: string;
+}
+
 export interface Property {
   id: number;
   propertyName: string;
@@ -25,4 +34,5 @@ export interface Property {
   manager?: PropertyUser | null;
   tenants?: PropertyUser[];
   manager_id?: number | null;
+  media?: PropertyMedia[];
 }

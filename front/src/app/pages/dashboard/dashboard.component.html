@@ -248,6 +248,11 @@
         </div>
 
         <div class="entity-card__footer property-card__actions">
+          @if (property.media?.length) {
+          <button class="btn btn-outline-primary" type="button" (click)="openPropertyMediaPreview(property)">
+            <i class="bi bi-images me-1"></i> View Added Media
+          </button>
+          }
           @if (!property.has_rent_deed) {
           <button class="btn btn-outline-secondary" type="button" disabled>
             <i class="bi bi-lock me-1"></i> Payment Locked
@@ -378,3 +383,28 @@
     (onConfirm)="confirmCancelSubscription()">
   </app-confirm-modal>
 </div>
+
+<c-modal [visible]="mediaPreviewVisible" (visibleChange)="mediaPreviewVisible = $event" size="lg">
+  <c-modal-header>
+    <h5 cModalTitle>{{ mediaPreviewTitle }} - Added Media</h5>
+    <button cButtonClose (click)="mediaPreviewVisible = false"></button>
+  </c-modal-header>
+  <c-modal-body>
+    @if (!mediaPreviewItems.length) {
+    <p class="text-muted mb-0">No media available.</p>
+    } @else {
+    <div class="property-media-grid">
+      @for (item of mediaPreviewItems; track item.url) {
+      <a [href]="item.url" target="_blank" rel="noopener" class="property-media-card">
+        @if (item.isImage) {
+        <img [src]="item.url" [alt]="item.name" />
+        } @else {
+        <div class="property-media-file"><i class="bi bi-file-earmark-text"></i></div>
+        }
+        <span>{{ item.name }}</span>
+      </a>
+      }
+    </div>
+    }
+  </c-modal-body>
+</c-modal>
