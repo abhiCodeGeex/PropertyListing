@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Modules\Maintenance\Models\MaintenanceRequest;
+use App\Models\PropertyMedia;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -16,6 +17,7 @@ class Property extends Model
         'manager_id',
         'property_name',
         'property_type',
+        'furnishing_type',
         'state',
         'city',
         'address',
@@ -71,4 +73,10 @@ class Property extends Model
     {
         return $this->hasMany(MaintenanceRequest::class);
     }
+
+    public function media()
+    {
+        return $this->hasMany(PropertyMedia::class);
+    }
 }
+

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\Property;
 use App\Models\PropertyTenant;
+use App\Models\PropertyMedia;
 use App\Models\RentSchedule;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,6 +19,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class PropertyController extends Controller
@@ -95,6 +97,7 @@ class PropertyController extends Controller
             'user_id' => $property ? $property->user_id : auth()->id(),
             'property_name' => trim((string) $request->input('propertyName', $property?->property_name ?? '')),
             'property_type' => $request->input('propertyType', $property?->property_type),
+            'furnishing_type' => $request->input('furnishingType', $property?->furnishing_type),
             'state' => trim((string) $request->input('state', $property?->state ?? '')),
             'city' => trim((string) $request->input('city', $property?->city ?? '')),
             'address' => trim((string) $request->input('address', $property?->address ?? '')),
@@ -115,6 +118,7 @@ class PropertyController extends Controller
         return [
             'property_name' => 'required|string|max:255',
             'property_type' => 'required|in:Residential,Commercial',
+            'furnishing_type' => 'required|in:Unfurnished,Semi-Furnished,Fully-Furnished',
             'state' => 'required|string|max:100',
             'city' => 'required|string|max:100',
             'address' => 'required|string|min:10',
@@ -135,6 +139,7 @@ class PropertyController extends Controller
         return [
             'property_name' => 'property name',
             'property_type' => 'property type',
+            'furnishing_type' => 'furnishing type',
             'monthly_rent' => 'monthly rent',
             'payment_mode' => 'payment mode',
             'security_amount' => 'security amount',
@@ -158,6 +163,38 @@ class PropertyController extends Controller
         return $trimmed === '' ? null : $trimmed;
     }
 
+
+
+    private function shouldHaveMedia(array $payload): bool
+    {
+        return in_array($payload['furnishing_type'] ?? null, ['Semi-Furnished', 'Fully-Furnished'], true);
+    }
+
+    private function syncPropertyMedia(Request $request, Property $property): void
+    {
+        if (! $request->hasFile('media')) {
+            return;
+        }
+
+        foreach ((array) $request->file('media') as $file) {
+            if (! $file) {
+                continue;
+            }
+
+            $path = $file->store('property-media', 'public');
+            $mime = (string) $file->getMimeType();
+            $category = str_starts_with($mime, 'image/') ? 'image' : 'document';
+
+            PropertyMedia::create([
+                'property_id' => $property->id,
+                'file_path' => $path,
+                'file_url' => Storage::disk('public')->url($path),
+                'file_type' => $category,
+                'mime_type' => $mime,
+                'uploaded_by' => auth()->id(),
+            ]);
+        }
+    }
     /** List properties */
     public function index(Request $request)
     {
@@ -167,6 +204,7 @@ class PropertyController extends Controller
             'owner:id,name,email',
             'manager:id,name,email',
             'tenants:id,name,email',
+            'media',
         ])->latest();
 
         /**
@@ -253,13 +291,21 @@ class PropertyController extends Controller
         if (auth()->user()->hasRole('super-admin') && $request->filled('ownerId')) {
             $data['user_id'] = (int) $request->input('ownerId');
         }
-        $validator = Validator::make($data, $this->propertyRules(), [], $this->propertyAttributes());
+        $validator = Validator::make(array_merge($data, ['media' => $request->file('media')]), array_merge($this->propertyRules(), ['media.*' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf,doc,docx|max:10240']), [], $this->propertyAttributes());
+
+        $validator->after(function ($validator) use ($data, $request) {
+            if ($this->shouldHaveMedia($data) && ! $request->hasFile('media')) {
+                $validator->errors()->add('media', 'Media upload is recommended for semi/fully furnished properties.');
+            }
+        });
+
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
         $property = Property::create($data);
+        $this->syncPropertyMedia($request, $property);
 
         return response()->json([
             'message' => 'Property created successfully!',
@@ -281,7 +327,14 @@ class PropertyController extends Controller
         $this->authorizePropertyAccess($property);
 
         $data = $this->propertyPayload($request, $property);
-        $validator = Validator::make($data, $this->propertyRules(), [], $this->propertyAttributes());
+        $validator = Validator::make(array_merge($data, ['media' => $request->file('media')]), array_merge($this->propertyRules(), ['media.*' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf,doc,docx|max:10240']), [], $this->propertyAttributes());
+
+        $validator->after(function ($validator) use ($data, $request, $property) {
+            $hasExistingMedia = $property->media()->exists();
+            if ($this->shouldHaveMedia($data) && ! $request->hasFile('media') && ! $hasExistingMedia) {
+                $validator->errors()->add('media', 'Media upload is recommended for semi/fully furnished properties.');
+            }
+        });
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);

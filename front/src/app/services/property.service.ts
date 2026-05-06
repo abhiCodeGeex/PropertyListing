@@ -56,11 +56,15 @@ export class PropertyService extends BaseApiService {
     return this.get(`${this.endpoint}/${propertyId}/tenants`);
   }
 
-  createProperty(property: Property): Observable<Property> {
+  createProperty(property: Property | FormData): Observable<Property> {
     return this.post(this.endpoint, property);
   }
 
-  updateProperty(id: number, property: Property): Observable<Property> {
+  updateProperty(id: number, property: Property | FormData): Observable<Property> {
+    if (property instanceof FormData) {
+      property.append('_method', 'PUT');
+      return this.post(`${this.endpoint}/${id}`, property);
+    }
     return this.put(`${this.endpoint}/${id}`, property);
   }
 

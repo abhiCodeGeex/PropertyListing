@@ -8,6 +8,7 @@ export interface Property {
   id: number;
   propertyName: string;
   propertyType: 'Residential' | 'Commercial';
+  furnishingType: 'Unfurnished' | 'Semi-Furnished' | 'Fully-Furnished';
   state: string;
   city: string;
   address: string;
