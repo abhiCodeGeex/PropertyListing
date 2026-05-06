@@ -4,10 +4,18 @@ export interface PropertyUser {
   email?: string;
 }
 
+export interface PropertyMedia {
+  id: number;
+  file_url: string;
+  file_type: 'image' | 'document';
+  mime_type?: string | null;
+}
+
 export interface Property {
   id: number;
   propertyName: string;
   propertyType: 'Residential' | 'Commercial';
+  furnishingType: 'Unfurnished' | 'Semi-Furnished' | 'Fully-Furnished';
   state: string;
   city: string;
   address: string;
@@ -23,5 +31,6 @@ export interface Property {
   owner?: PropertyUser | null;
   manager?: PropertyUser | null;
   tenants?: PropertyUser[];
+  media?: PropertyMedia[];
   manager_id?: number | null;
 }

@@ -81,6 +81,7 @@ export class PropertyComponent implements OnInit, OnDestroy {
   openDropdownId: number | null = null;
 
   propertyTypes = ['Residential', 'Commercial'];
+  furnishingTypes = ['Unfurnished', 'Semi-Furnished', 'Fully-Furnished'];
   paymentModes = ['UPI', 'Cash', 'Credit/Debit Cards'];
   electricityPaidByOptions = ['owner', 'tenant'];
   private searchSubject = new Subject<string>();
@@ -91,6 +92,7 @@ export class PropertyComponent implements OnInit, OnDestroy {
   private readonly backendToFormFieldMap: Record<string, string> = {
     property_name: 'propertyName',
     property_type: 'propertyType',
+    furnishing_type: 'furnishingType',
     monthly_rent: 'monthlyRent',
     payment_mode: 'paymentMode',
     security_amount: 'securityAmount',
@@ -134,6 +136,7 @@ export class PropertyComponent implements OnInit, OnDestroy {
     this.form = this.fb.group({
       propertyName: ['', [this.requiredTrimmed(), Validators.maxLength(255)]],
       propertyType: ['', Validators.required],
+      furnishingType: ['Unfurnished', Validators.required],
       state: ['', [this.requiredTrimmed(), Validators.maxLength(100)]],
       city: ['', [this.requiredTrimmed(), Validators.maxLength(100)]],
       address: ['', [this.requiredTrimmed(), Validators.minLength(10)]],
@@ -208,6 +211,7 @@ export class PropertyComponent implements OnInit, OnDestroy {
           userId: p.user_id,
           propertyName: p.property_name,
           propertyType: p.property_type,
+          furnishingType: p.furnishing_type || 'Unfurnished',
           state: p.state,
           city: p.city,
           address: p.address,
@@ -224,6 +228,7 @@ export class PropertyComponent implements OnInit, OnDestroy {
           manager_id: p.manager_id,
           manager: p.manager ?? null,
           tenants: Array.isArray(p.tenants) ? p.tenants : [],
+          media: Array.isArray(p.media) ? p.media : [],
         }));
 
         this.totalPages = res.last_page;
@@ -245,9 +250,12 @@ export class PropertyComponent implements OnInit, OnDestroy {
     this.isEditMode = false;
     this.selectedProperty = null;
     this.formErrorService.clearServerErrors(this.form);
+    this.selectedMediaFiles = [];
+    this.existingMediaFiles = [];
     this.form.reset({
       propertyName: '',
       propertyType: '',
+      furnishingType: 'Unfurnished',
       state: '',
       city: '',
       address: '',
@@ -274,6 +282,8 @@ export class PropertyComponent implements OnInit, OnDestroy {
     this.isEditMode = true;
     this.selectedProperty = property;
     this.formErrorService.clearServerErrors(this.form);
+    this.selectedMediaFiles = [];
+    this.existingMediaFiles = Array.isArray((property as any)?.media) ? (property as any).media : [];
     this.form.patchValue(property);
     this.form.markAsPristine();
     this.form.markAsUntouched();
@@ -485,13 +495,37 @@ export class PropertyComponent implements OnInit, OnDestroy {
       terminationClause: 'Termination Clause',
       latePaymentPenalty: 'Late Payment Penalty',
       electricityBillPaidBy: 'Electricity Bill Paid By',
+      furnishingType: 'Furnishing Type',
     };
 
     return labels[controlName] ?? controlName;
   }
 
+  selectedMediaFiles: File[] = [];
+  existingMediaFiles: any[] = [];
+
+  onMediaSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.selectedMediaFiles = Array.from(input.files || []);
+  }
+
+  removeSelectedMediaFile(index: number) {
+    this.selectedMediaFiles = this.selectedMediaFiles.filter((_, i) => i !== index);
+  }
+
+  openMedia(url: string) {
+    if (url) {
+      window.open(url, '_blank', 'noopener');
+    }
+  }
+
+  shouldShowMediaSection(): boolean {
+    const furnishingType = this.form?.get('furnishingType')?.value;
+    return furnishingType === 'Semi-Furnished' || furnishingType === 'Fully-Furnished';
+  }
+
   private normalizePayload(rawValue: any) {
-    return {
+    const payload = {
       ...rawValue,
       propertyName: rawValue.propertyName?.trim() ?? '',
       state: rawValue.state?.trim() ?? '',
@@ -505,5 +539,14 @@ export class PropertyComponent implements OnInit, OnDestroy {
       monthlyRent: rawValue.monthlyRent === '' || rawValue.monthlyRent === null ? null : Number(rawValue.monthlyRent),
       securityAmount: rawValue.securityAmount === '' || rawValue.securityAmount === null ? 0 : Number(rawValue.securityAmount),
     };
+
+    if (this.selectedMediaFiles.length) {
+      const formData = new FormData();
+      Object.entries(payload).forEach(([key, value]) => formData.append(key, value as any));
+      this.selectedMediaFiles.forEach((file) => formData.append('media[]', file));
+      return formData;
+    }
+
+    return payload;
   }
 }
