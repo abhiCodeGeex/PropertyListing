@@ -195,6 +195,21 @@
                     }
                 </div>
 
+
+                <div class="mb-3 col-md-6">
+                    <label class="required-label">Furnishing Type</label>
+                    <select cSelect formControlName="furnishingType" class="form-control"
+                        [ngClass]="{ 'is-invalid': isInvalid('furnishingType') }">
+                        @for (type of furnishingTypes; track type) {
+                        <option [value]="type">{{ type }}</option>
+                        }
+                    </select>
+
+                    @if (isInvalid('furnishingType')) {
+                    <div class="invalid-feedback">{{ getErrorMessage('furnishingType') }}</div>
+                    }
+                </div>
+
                 <!-- State -->
                 <div class="mb-3 col-md-6">
                     <label class="required-label">State</label>
@@ -231,6 +246,15 @@
                 </div>
 
                 <!-- Monthly Rent -->
+
+                @if (shouldShowMediaSection()) {
+                <div class="mb-3 col-md-12">
+                    <label>Property Media (Images / Documents)</label>
+                    <input type="file" class="form-control" multiple (change)="onMediaSelected($event)" accept="image/*,.pdf,.doc,.docx" />
+                    <div class="form-text">Upload visuals/docs for semi or fully furnished properties.</div>
+                </div>
+                }
+
                 <div class="mb-3 col-md-6">
                     <label class="required-label">Monthly Rent</label>
                     <input type="number" formControlName="monthlyRent" class="form-control" placeholder="Enter monthly rent amount"
