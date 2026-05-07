@@ -11,14 +11,13 @@ import { IconSetService } from '@coreui/icons-angular';
 import { iconSubset } from './icons/icon-subset';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { WebsocketService } from './services/websocket.service';
-import { FullLoaderComponent } from './pages/common/full-loader/full-loader.component';
 import { environment } from '../environments/environment';
 import { setAppCurrencyConfig } from './shared/utils/currency.util';
 
 @Component({
   selector: 'app-root',
-  template: '<app-full-loader /><router-outlet />',
-  imports: [RouterOutlet, ReactiveFormsModule, FormsModule, FullLoaderComponent]
+  template: '<router-outlet />',
+  imports: [RouterOutlet, ReactiveFormsModule, FormsModule]
 })
 export class AppComponent implements OnInit {
   title = 'Property Listing';
