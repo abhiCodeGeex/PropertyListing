@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Title } from '@angular/platform-browser';
-import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { ActivatedRoute, NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router, RouterOutlet } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { delay, filter, map, tap } from 'rxjs/operators';
 
@@ -16,11 +16,18 @@ import { setAppCurrencyConfig } from './shared/utils/currency.util';
 
 @Component({
   selector: 'app-root',
-  template: '<router-outlet />',
+  template: `
+    @if (navigationLoading()) {
+      <div class="page-transition-loader" aria-hidden="true"></div>
+    }
+    <router-outlet />
+  `,
   imports: [RouterOutlet, ReactiveFormsModule, FormsModule]
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   title = 'Property Listing';
+  readonly navigationLoading = signal(false);
+  private navigationLoaderTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly #destroyRef: DestroyRef = inject(DestroyRef);
   readonly #activatedRoute: ActivatedRoute = inject(ActivatedRoute);
@@ -63,8 +70,19 @@ export class AppComponent implements OnInit {
     this.#router.events.pipe(
       takeUntilDestroyed(this.#destroyRef)
     ).subscribe((evt) => {
-      if (!(evt instanceof NavigationEnd)) {
+      if (evt instanceof NavigationStart) {
+        this.clearNavigationLoaderTimer();
+        this.navigationLoading.set(true);
         return;
+      }
+
+      if (evt instanceof NavigationEnd || evt instanceof NavigationCancel || evt instanceof NavigationError) {
+        // keep the indicator visible briefly to avoid flicker on fast route changes
+        this.clearNavigationLoaderTimer();
+        this.navigationLoaderTimer = setTimeout(() => {
+          this.navigationLoading.set(false);
+          this.navigationLoaderTimer = null;
+        }, 220);
       }
     });
 
@@ -79,5 +97,16 @@ export class AppComponent implements OnInit {
         takeUntilDestroyed(this.#destroyRef)
       )
       .subscribe();
+  }
+
+  ngOnDestroy(): void {
+    this.clearNavigationLoaderTimer();
+  }
+
+  private clearNavigationLoaderTimer(): void {
+    if (this.navigationLoaderTimer) {
+      clearTimeout(this.navigationLoaderTimer);
+      this.navigationLoaderTimer = null;
+    }
   }
 }
