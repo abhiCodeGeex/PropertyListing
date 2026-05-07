@@ -13,13 +13,14 @@ import { IconSetService } from '@coreui/icons-angular';
 import { routes } from './app.routes';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './interceptors/auth.interceptor';
-import { loaderInterceptor } from './interceptors/loader.interceptor';
+import { smartLoaderInterceptor } from './core/interceptors/smart-loader.interceptor';
 import { provideServiceWorker } from '@angular/service-worker';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideHttpClient(
-      withInterceptors([authInterceptor, loaderInterceptor])   // ✅ register interceptor
+      // Smart loader interceptor replaces the old loaderInterceptor
+      withInterceptors([authInterceptor, smartLoaderInterceptor])
     ),
     provideRouter(routes,
       withRouterConfig({
