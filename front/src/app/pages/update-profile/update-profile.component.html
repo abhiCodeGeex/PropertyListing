@@ -90,7 +90,7 @@
                   (input)="sanitizeDigits('aadhar', 12)"
                   [ngClass]="{ 'is-invalid': isInvalid('aadhar') }" />
                 <button type="button" class="btn btn-primary" (click)="sendOtp()" [disabled]="otpLoading">
-                  <span *ngIf="!otpLoading">Send OTP</span>
+                  <span *ngIf="!otpLoading">{{ otpRequested ? 'Resend OTP' : 'Send OTP' }}</span>
                   <span *ngIf="otpLoading">Sending...</span>
                 </button>
               </div>
