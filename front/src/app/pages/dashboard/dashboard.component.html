@@ -1,90 +1,125 @@
 <div class="container-fluid dashboard workspace-page">
 
-  <div class="dashboard-hero">
-    <div class="dashboard-hero__content">
-      <span class="dashboard-eyebrow">Workspace Overview</span>
-      <h2>Manage rent, collections, and subscription activity for {{ displayNameText }}</h2>
-      <p>Only the current payment state and next actions are shown here. Supporting details stay tucked away until you need them.</p>
+  <!-- ═══════════════════════ HERO BANNER ═══════════════════════ -->
+  <div class="db-hero">
+    <div class="db-hero__left">
+      <span class="db-eyebrow">
+        <i class="bi bi-speedometer2 me-1"></i>
+        {{ isTenant ? 'Tenant Dashboard' : 'Workspace Overview' }}
+      </span>
+      <h1 class="db-hero__title">Welcome back, {{ displayNameText }}</h1>
+      <p class="db-hero__sub">
+        {{ isTenant
+          ? 'Track your rent, auto-pay status, and payment deadlines — all in one place.'
+          : 'Manage rent collections, approvals, and subscription activity from here.' }}
+      </p>
     </div>
 
-    <div class="dashboard-summary">
-      <div class="dashboard-summary__card">
-        <span class="dashboard-summary__label">Properties</span>
-        <strong>{{ activePropertyCount() }}</strong>
+    <div class="db-stats">
+      <div class="db-stat-card">
+        <div class="db-stat-card__icon db-stat-card__icon--blue">
+          <i class="bi bi-building"></i>
+        </div>
+        <div>
+          <div class="db-stat-card__value">{{ activePropertyCount() }}</div>
+          <div class="db-stat-card__label">Properties</div>
+        </div>
       </div>
-      <div class="dashboard-summary__card">
-        <span class="dashboard-summary__label">Overdue</span>
-        <strong>{{ overduePropertyCount() }}</strong>
+
+      <div class="db-stat-card" [class.db-stat-card--alert]="overduePropertyCount() > 0">
+        <div class="db-stat-card__icon db-stat-card__icon--red">
+          <i class="bi bi-exclamation-circle"></i>
+        </div>
+        <div>
+          <div class="db-stat-card__value">{{ overduePropertyCount() }}</div>
+          <div class="db-stat-card__label">Overdue</div>
+        </div>
       </div>
-      <div class="dashboard-summary__card">
-        <span class="dashboard-summary__label">Auto-Pay Active</span>
-        <strong>{{ autoPayActiveCount() }}</strong>
+
+      <div class="db-stat-card" [class.db-stat-card--success]="autoPayActiveCount() > 0">
+        <div class="db-stat-card__icon db-stat-card__icon--green">
+          <i class="bi bi-arrow-repeat"></i>
+        </div>
+        <div>
+          <div class="db-stat-card__value">{{ autoPayActiveCount() }}</div>
+          <div class="db-stat-card__label">Auto-Pay On</div>
+        </div>
       </div>
+
       @if (isOwnerManager) {
-      <div class="dashboard-summary__card">
-        <span class="dashboard-summary__label">Approvals</span>
-        <strong>{{ pendingApprovalCount() }}</strong>
+      <div class="db-stat-card" [class.db-stat-card--alert]="pendingApprovalCount() > 0">
+        <div class="db-stat-card__icon db-stat-card__icon--amber">
+          <i class="bi bi-clock-history"></i>
+        </div>
+        <div>
+          <div class="db-stat-card__value">{{ pendingApprovalCount() }}</div>
+          <div class="db-stat-card__label">Approvals</div>
+        </div>
       </div>
       }
     </div>
   </div>
 
+  <!-- ═══════════════════════ STATUS BADGE TEMPLATE ═══════════════════════ -->
   <ng-template #statusBadge let-s="status">
     @switch (s) {
-    @case ('paid') { <span class="soft-pill soft-pill--success">Paid</span> }
-    @case ('manual_pending') { <span class="soft-pill soft-pill--warning">Awaiting Approval</span> }
-    @case ('pending') { <span class="soft-pill soft-pill--warning">Pending</span> }
-    @case ('overdue') { <span class="soft-pill soft-pill--danger">Overdue</span> }
-    @default { <span class="soft-pill soft-pill--neutral">{{ s }}</span> }
+    @case ('paid') { <span class="db-badge db-badge--success"><i class="bi bi-check-circle-fill me-1"></i>Paid</span> }
+    @case ('manual_pending') { <span class="db-badge db-badge--warning"><i class="bi bi-hourglass-split me-1"></i>Awaiting Approval</span> }
+    @case ('pending') { <span class="db-badge db-badge--warning"><i class="bi bi-clock me-1"></i>Pending</span> }
+    @case ('overdue') { <span class="db-badge db-badge--danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue</span> }
+    @default { <span class="db-badge db-badge--neutral">{{ s }}</span> }
     }
   </ng-template>
 
+  <!-- ═══════════════════════ OWNER/MANAGER APPROVAL TABLES ═══════════════════════ -->
   <ng-template #approvalTable let-data="data" let-type="type">
-    <div>
-      <div class="section-title-row">
+    <div class="db-section">
+      <div class="db-section__header">
+        <div class="db-section__icon db-section__icon--amber">
+          <i class="bi bi-clipboard2-check"></i>
+        </div>
         <div>
-          <h4>{{ type === 'security' ? 'Security Deposit Approval Requests' : 'Manual Rent Approval Requests' }}</h4>
-          <div class="section-subtitle">Pending stakeholder actions that require approval or rejection.</div>
+          <h2 class="db-section__title">
+            {{ type === 'security' ? 'Security Deposit Approvals' : 'Manual Rent Approvals' }}
+          </h2>
+          <p class="db-section__sub">Pending requests awaiting your approval or rejection.</p>
         </div>
       </div>
 
-      <div class="enterprise-table-shell">
+      <div class="db-table-shell">
         <div class="table-responsive">
-          <table class="table table-hover align-middle dashboard-table enterprise-table">
+          <table class="table db-table align-middle">
             <thead>
               <tr>
                 <th>Property</th>
                 <th>Tenant</th>
                 <th>Amount</th>
-                @if (type === 'rent') {
-                <th>Month</th>
-                }
+                @if (type === 'rent') { <th>Month</th> }
                 <th>Status</th>
                 <th class="text-center">Action</th>
               </tr>
             </thead>
-
             <tbody>
               @for (item of data; track item.tenancy_id) {
               <tr>
-                <td class="table-cell-strong">{{ item.property_name }}</td>
-                <td>{{ item.tenant_name }}</td>
-                <td class="fw-semibold">{{ formatCurrency(item.amount) }}</td>
+                <td class="fw-semibold text-dark">{{ item.property_name }}</td>
+                <td class="text-secondary">{{ item.tenant_name }}</td>
+                <td class="fw-bold">{{ formatCurrency(item.amount) }}</td>
                 @if (type === 'rent') {
-                <td class="table-cell-soft">{{ item.month | date:'MMMM yyyy' }}</td>
+                <td class="text-secondary">{{ item.month | date:'MMMM yyyy' }}</td>
                 }
-                <td><span class="soft-pill soft-pill--warning">Manual Pending</span></td>
-
+                <td><span class="db-badge db-badge--warning"><i class="bi bi-hourglass-split me-1"></i>Manual Pending</span></td>
                 <td class="text-center">
-                  <button class="btn btn-success btn-sm me-2"
-                    (click)="approve(type, item.tenancy_id, 'approved', type === 'rent' ? item.rent_schedule_id : null)">
-                    <i class="bi bi-check-circle me-1"></i> Approve
-                  </button>
-
-                  <button class="btn btn-outline-danger btn-sm"
-                    (click)="approve(type, item.tenancy_id, 'declined', type === 'rent' ? item.rent_schedule_id : null)">
-                    <i class="bi bi-x-circle me-1"></i> Reject
-                  </button>
+                  <div class="d-flex gap-2 justify-content-center">
+                    <button class="db-action-btn db-action-btn--approve"
+                      (click)="approve(type, item.tenancy_id, 'approved', type === 'rent' ? item.rent_schedule_id : null)">
+                      <i class="bi bi-check-lg"></i> Approve
+                    </button>
+                    <button class="db-action-btn db-action-btn--reject"
+                      (click)="approve(type, item.tenancy_id, 'declined', type === 'rent' ? item.rent_schedule_id : null)">
+                      <i class="bi bi-x-lg"></i> Reject
+                    </button>
+                  </div>
                 </td>
               </tr>
               }
@@ -103,227 +138,244 @@
   <ng-container *ngTemplateOutlet="approvalTable; context:{data: rentApprovals, type: 'rent'}"></ng-container>
   }
 
+  <!-- ═══════════════════════ PROPERTY CARDS ═══════════════════════ -->
   @if (properties.length > 0) {
-  <div>
-    <div class="section-title-row section-title-row--spaced">
+  <div class="db-section">
+    <div class="db-section__header">
+      <div class="db-section__icon db-section__icon--blue">
+        <i class="bi bi-house-door"></i>
+      </div>
       <div>
-        <h4>Assigned Properties</h4>
-        <div class="section-subtitle">Focused cards for rent status, next payment action, and subscription health.</div>
+        <h2 class="db-section__title">Assigned Properties</h2>
+        <p class="db-section__sub">Your active tenancies, rent status, and payment actions.</p>
       </div>
     </div>
 
-    <div class="card-grid">
+    <div class="db-property-grid">
       @for (property of properties; track property.tenancy_id) {
-      <div class="entity-card property-card">
-        <div class="entity-card__header">
-          <div>
-            <h5 class="entity-card__title d-flex align-items-center gap-2">
-              <i class="bi bi-building text-primary"></i> {{ property.property_name }}
-            </h5>
-            <p class="entity-card__subtitle">
-              @if (property.due_date) {
-              Next date {{ property.due_date | date:'mediumDate' }}
-              }
-              @else {
-              Payment schedule unavailable
-              }
-            </p>
-          </div>
-          <ng-container *ngTemplateOutlet="statusBadge; context:{status: property.rent_status}"></ng-container>
-        </div>
 
-        <div class="entity-card__stack">
-          <div class="property-card__spotlight">
+      <!-- Property Card -->
+      <div class="db-property-card" [class.db-property-card--overdue]="property.rent_status === 'overdue'">
+
+        <!-- Card Top Bar -->
+        <div class="db-property-card__topbar">
+          <div class="db-property-card__name-block">
+            <div class="db-property-card__icon">
+              <i class="bi bi-building-fill"></i>
+            </div>
             <div>
-              <div class="entity-card__meta-label">{{ primaryAmountLabel(property) }}</div>
-              <div class="property-card__amount">{{ formatCurrency(primaryAmountValue(property)) }}</div>
-              <div class="property-card__support">{{ supportText(property) }}</div>
-            </div>
-            <div class="property-card__tags">
-              <span class="metric-chip">{{ property.payment_mode }}</span>
-              <span [class]="subscriptionStateClass(property)">{{ subscriptionStateLabel(property) }}</span>
-            </div>
-          </div>
-
-          <div class="property-card__facts">
-            <div class="property-card__fact">
-              <span class="property-card__fact-label">Monthly rent</span>
-              <strong>{{ formatCurrency(property.monthly_rent || 0) }}</strong>
-            </div>
-            <div class="property-card__fact">
-              <span class="property-card__fact-label">Auto-pay</span>
-              <strong>{{ subscriptionStateLabel(property) }}</strong>
-            </div>
-            @if (property.rent_status !== 'paid') {
-            <div class="property-card__fact">
-              <span class="property-card__fact-label">Current payable</span>
-              <strong>{{ formatCurrency(property.payable_now_total || property.overdue_total || 0) }}</strong>
-            </div>
-            }
-          </div>
-
-          <div class="property-card__subscription-summary" [class.is-scheduled]="property.has_subscription === 3"
-            [class.is-active]="property.has_subscription === 1"
-            [class.is-inactive]="property.has_subscription !== 1 && property.has_subscription !== 3">
-            <div class="property-card__subscription-head">
-              <div>
-                <div class="entity-card__meta-label">Subscription status</div>
-                <strong>{{ subscriptionSummaryTitle(property) }}</strong>
-              </div>
-              @if (property.has_subscription === 3 && subscriptionEndsLabel(property)) {
-              <span class="soft-pill soft-pill--warning">Ends {{ subscriptionEndsLabel(property) }}</span>
-              }
-            </div>
-            <p>{{ subscriptionSummaryText(property) }}</p>
-          </div>
-
-          @if (shouldShowDetails(property)) {
-          <button class="property-card__toggle" type="button" (click)="togglePropertyDetails(property.tenancy_id)">
-            <span>{{ isPropertyDetailsExpanded(property.tenancy_id) ? 'Hide details' : 'View details' }}</span>
-            <i class="bi" [class.bi-chevron-up]="isPropertyDetailsExpanded(property.tenancy_id)"
-              [class.bi-chevron-down]="!isPropertyDetailsExpanded(property.tenancy_id)"></i>
-          </button>
-
-          @if (isPropertyDetailsExpanded(property.tenancy_id)) {
-          <div class="property-card__details">
-            @if (property.late_fee_policy_active && property.late_payment_penalty_policy) {
-            <div class="property-card__detail-panel">
-              <div class="entity-card__meta-label">Late fee policy</div>
-              <p>{{ property.late_payment_penalty_policy }}</p>
-            </div>
-            }
-
-            @if (property.has_subscription === 3) {
-            <div class="property-card__detail-panel">
-              <div class="entity-card__meta-label">Cancellation schedule</div>
-              <p>Auto-pay remains active until {{ subscriptionEndsLabel(property) || 'month end' }}.</p>
-            </div>
-            }
-
-            @if (!property.has_rent_deed) {
-            <div class="property-card__detail-panel property-card__detail-panel--warning">
-              <div class="entity-card__meta-label">Rent deed pending</div>
-              <p>Payment is locked until the owner or manager creates the rent deed for this tenancy.</p>
-            </div>
-            }
-
-            @if (property.rent_status === 'overdue' && property.overdue_count > 0) {
-            <div class="property-card__detail-panel property-card__detail-panel--danger">
-              <div class="property-card__detail-head">
-                <div>
-                  <div class="entity-card__meta-label">Overdue breakdown</div>
-                  <strong>{{ property.overdue_count }} overdue rents</strong>
-                </div>
-                <strong>{{ formatCurrency(property.overdue_total) }}</strong>
-              </div>
-
-              <ul class="property-card__detail-list">
-                @for (o of property.overdue_months; track o.id) {
-                <li>
-                  <span>{{ o.month }} | Due {{ o.due_date }}</span>
-                  <strong>{{ formatCurrency(o.payable_total || o.amount) }}</strong>
-                  @if (o.late_fee_amount > 0) {
-                  <small>Rent {{ formatCurrency(o.amount) }} + Late fee {{ formatCurrency(o.late_fee_amount) }}</small>
-                  }
-                </li>
+              <h3 class="db-property-card__name">{{ property.property_name }}</h3>
+              <div class="db-property-card__due">
+                @if (property.due_date) {
+                <i class="bi bi-calendar3 me-1"></i>Next payment: {{ property.due_date | date:'dd MMM yyyy' }}
+                } @else {
+                <i class="bi bi-calendar-x me-1"></i>No schedule set
                 }
-              </ul>
-            </div>
-            }
-
-            @if (property.security_deposit_amount) {
-            <div class="property-card__detail-panel">
-              <div class="property-card__detail-head">
-                <div>
-                  <div class="entity-card__meta-label">Security deposit</div>
-                  <strong>{{ formatCurrency(property.security_deposit_amount) }}</strong>
-                </div>
-                <ng-container *ngTemplateOutlet="statusBadge; context:{status: property.security_deposit_status}"></ng-container>
               </div>
             </div>
+          </div>
+          <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+            <ng-container *ngTemplateOutlet="statusBadge; context:{status: property.rent_status}"></ng-container>
+            @if (property.media?.length) {
+            <button class="db-media-btn" type="button" (click)="openPropertyMediaPreview(property)">
+              <i class="bi bi-images me-1"></i>{{ property.media.length }} Photo{{ property.media.length > 1 ? 's' : '' }}
+            </button>
             }
           </div>
-          }
+        </div>
+
+        <!-- Amount Spotlight -->
+        <div class="db-spotlight" [class.db-spotlight--danger]="property.rent_status === 'overdue'"
+          [class.db-spotlight--success]="property.rent_status === 'paid'">
+          <div class="db-spotlight__left">
+            <div class="db-spotlight__label">{{ primaryAmountLabel(property) }}</div>
+            <div class="db-spotlight__amount">{{ formatCurrency(primaryAmountValue(property)) }}</div>
+            <div class="db-spotlight__support">{{ supportText(property) }}</div>
+          </div>
+          <div class="db-spotlight__badges">
+            <span class="db-tag db-tag--light">{{ property.payment_mode }}</span>
+            <span [class]="subscriptionStateClass(property)">{{ subscriptionStateLabel(property) }}</span>
+          </div>
+        </div>
+
+        <!-- Fact Row -->
+        <div class="db-fact-row">
+          <div class="db-fact">
+            <div class="db-fact__label">Monthly Rent</div>
+            <div class="db-fact__value">{{ formatCurrency(property.monthly_rent || 0) }}</div>
+          </div>
+          <div class="db-fact">
+            <div class="db-fact__label">Auto-Pay</div>
+            <div class="db-fact__value">{{ subscriptionStateLabel(property) }}</div>
+          </div>
+          @if (property.rent_status !== 'paid') {
+          <div class="db-fact">
+            <div class="db-fact__label">Payable Now</div>
+            <div class="db-fact__value db-fact__value--highlight">
+              {{ formatCurrency(property.payable_now_total || property.overdue_total || 0) }}
+            </div>
+          </div>
           }
         </div>
 
-        <div class="entity-card__footer property-card__actions">
-          @if (property.media?.length) {
-          <button class="btn btn-outline-primary" type="button" (click)="openPropertyMediaPreview(property)">
-            <i class="bi bi-images me-1"></i> View Added Media
-          </button>
+        <!-- Subscription Status Banner -->
+        <div class="db-sub-banner"
+          [class.db-sub-banner--active]="property.has_subscription === 1"
+          [class.db-sub-banner--scheduled]="property.has_subscription === 3"
+          [class.db-sub-banner--inactive]="property.has_subscription !== 1 && property.has_subscription !== 3">
+          <div class="db-sub-banner__head">
+            <div>
+              <div class="db-sub-banner__label">Subscription Status</div>
+              <div class="db-sub-banner__title">{{ subscriptionSummaryTitle(property) }}</div>
+            </div>
+            @if (property.has_subscription === 3 && subscriptionEndsLabel(property)) {
+            <span class="db-badge db-badge--warning">Ends {{ subscriptionEndsLabel(property) }}</span>
+            }
+          </div>
+          <p class="db-sub-banner__text">{{ subscriptionSummaryText(property) }}</p>
+        </div>
+
+        <!-- Expandable Details -->
+        @if (shouldShowDetails(property)) {
+        <button class="db-toggle-btn" type="button" (click)="togglePropertyDetails(property.tenancy_id)">
+          <span>{{ isPropertyDetailsExpanded(property.tenancy_id) ? 'Hide details' : 'View details' }}</span>
+          <i class="bi" [class.bi-chevron-up]="isPropertyDetailsExpanded(property.tenancy_id)"
+            [class.bi-chevron-down]="!isPropertyDetailsExpanded(property.tenancy_id)"></i>
+        </button>
+
+        @if (isPropertyDetailsExpanded(property.tenancy_id)) {
+        <div class="db-details">
+
+          @if (property.late_fee_policy_active && property.late_payment_penalty_policy) {
+          <div class="db-detail-panel">
+            <div class="db-detail-panel__label"><i class="bi bi-receipt me-1"></i>Late Fee Policy</div>
+            <p>{{ property.late_payment_penalty_policy }}</p>
+          </div>
           }
+
+          @if (property.has_subscription === 3) {
+          <div class="db-detail-panel">
+            <div class="db-detail-panel__label"><i class="bi bi-calendar-check me-1"></i>Cancellation Schedule</div>
+            <p>Auto-pay remains active until {{ subscriptionEndsLabel(property) || 'month end' }}.</p>
+          </div>
+          }
+
           @if (!property.has_rent_deed) {
-          <button class="btn btn-outline-secondary" type="button" disabled>
-            <i class="bi bi-lock me-1"></i> Payment Locked
+          <div class="db-detail-panel db-detail-panel--warning">
+            <div class="db-detail-panel__label"><i class="bi bi-lock me-1"></i>Rent Deed Pending</div>
+            <p>Payment is locked until the owner or manager creates the rent deed for this tenancy.</p>
+          </div>
+          }
+
+          @if (property.rent_status === 'overdue' && property.overdue_count > 0) {
+          <div class="db-detail-panel db-detail-panel--danger">
+            <div class="db-detail-panel__head">
+              <div>
+                <div class="db-detail-panel__label"><i class="bi bi-exclamation-triangle me-1"></i>Overdue Breakdown</div>
+                <strong>{{ property.overdue_count }} missed {{ property.overdue_count === 1 ? 'cycle' : 'cycles' }}</strong>
+              </div>
+              <strong class="text-danger">{{ formatCurrency(property.overdue_total) }}</strong>
+            </div>
+            <ul class="db-overdue-list">
+              @for (o of property.overdue_months; track o.id) {
+              <li>
+                <div class="db-overdue-list__info">
+                  <span class="fw-semibold">{{ o.month }}</span>
+                  <small>Due {{ o.due_date }}</small>
+                  @if (o.late_fee_amount > 0) {
+                  <small class="text-danger">Rent {{ formatCurrency(o.amount) }} + Late fee {{ formatCurrency(o.late_fee_amount) }}</small>
+                  }
+                </div>
+                <strong>{{ formatCurrency(o.payable_total || o.amount) }}</strong>
+              </li>
+              }
+            </ul>
+          </div>
+          }
+
+          @if (property.security_deposit_amount) {
+          <div class="db-detail-panel">
+            <div class="db-detail-panel__head">
+              <div>
+                <div class="db-detail-panel__label"><i class="bi bi-shield-check me-1"></i>Security Deposit</div>
+                <strong>{{ formatCurrency(property.security_deposit_amount) }}</strong>
+              </div>
+              <ng-container *ngTemplateOutlet="statusBadge; context:{status: property.security_deposit_status}"></ng-container>
+            </div>
+          </div>
+          }
+
+        </div>
+        }
+        }
+
+        <!-- ── Action Footer ── -->
+        <div class="db-card-footer">
+
+          @if (!property.has_rent_deed) {
+          <button class="db-cta-btn db-cta-btn--locked" disabled>
+            <i class="bi bi-lock-fill me-2"></i>Payment Locked — Rent deed pending
           </button>
           }
           @else if (property.rent_status === 'pending' && canUseOnlineRentPayment(property)) {
-          <div class="property-card__action-row">
-            <button class="btn btn-success" (click)="openModal('pay', property)">
-              <i class="bi bi-credit-card me-1"></i>
-              {{ property.has_subscription >= 1 ? 'Pay Due Rent' : 'Pay Rent & Subscribe' }}
-            </button>
-          </div>
+          <button class="db-cta-btn db-cta-btn--primary" (click)="openModal('pay', property)">
+            <i class="bi bi-credit-card-fill me-2"></i>
+            {{ property.has_subscription >= 1 ? 'Pay Due Rent' : 'Pay Rent & Subscribe' }}
+          </button>
           }
           @else if (property.rent_status === 'paid' && property.has_subscription === 0 && canUseOnlineRentPayment(property)) {
-          <div class="property-card__action-row">
-            <button class="btn btn-primary" (click)="openModal('autopay', property)">
-              <i class="bi bi-arrow-repeat me-1"></i> Start Auto-Pay
-            </button>
-          </div>
+          <button class="db-cta-btn db-cta-btn--secondary" (click)="openModal('autopay', property)">
+            <i class="bi bi-arrow-repeat me-2"></i>Start Auto-Pay
+          </button>
           }
           @else if (property.rent_status === 'overdue' && canUseOnlineRentPayment(property)) {
-          <div class="property-card__action-row">
-            <button class="btn btn-danger" (click)="openModal('overdue', property)">
-              <i class="bi bi-exclamation-triangle me-1"></i>
-              {{ property.has_subscription >= 1 ? 'Pay Missed Rent' : 'Pay Missed Rent & Start Auto-Pay' }}
-            </button>
-          </div>
+          <button class="db-cta-btn db-cta-btn--danger" (click)="openModal('overdue', property)">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            {{ property.has_subscription >= 1 ? 'Pay Missed Rent' : 'Pay Missed Rent & Start Auto-Pay' }}
+          </button>
           }
           @else {
-          <div class="property-card__action-row">
-            @if ((property.rent_status === 'pending' || property.rent_status === 'overdue') && canRequestManualRent(property)) {
-            <button class="btn btn-outline-primary" (click)="requestManualRent(property)"
-              [disabled]="isActionLoading(property, 'rent')">
-              <i class="bi bi-bell me-1"></i> Notify Manual Rent Payment
-            </button>
-            }
-          </div>
+          @if ((property.rent_status === 'pending' || property.rent_status === 'overdue') && canRequestManualRent(property)) {
+          <button class="db-cta-btn db-cta-btn--outline" (click)="requestManualRent(property)"
+            [disabled]="isActionLoading(property, 'rent')">
+            <i class="bi bi-bell-fill me-2"></i>Notify Manual Rent Payment
+          </button>
+          }
           }
 
           @if (property.security_deposit_status === 'pending' && property.has_subscription < 2) {
-          <div class="property-card__action-row property-card__action-row--secondary">
+          <div class="db-secondary-actions">
             @if (canUseOnlineSecurityPayment(property)) {
-            <button class="btn btn-outline-primary" (click)="openModal('security', property)">
-              <i class="bi bi-shield-lock me-1"></i> Pay Security Deposit
+            <button class="db-cta-btn db-cta-btn--outline-blue" (click)="openModal('security', property)">
+              <i class="bi bi-shield-lock me-2"></i>Pay Security Deposit
             </button>
             }
             @if (canRequestManualSecurityPayment(property)) {
-            <button class="btn btn-outline-secondary" (click)="requestManual(property)"
+            <button class="db-cta-btn db-cta-btn--ghost" (click)="requestManual(property)"
               [disabled]="isActionLoading(property, 'security')">
-              <i class="bi bi-bell me-1"></i> Notify Security Deposit
+              <i class="bi bi-bell me-2"></i>Notify Security Deposit
             </button>
             }
           </div>
           }
 
           @if (property.has_subscription === 1) {
-          <button class="btn btn-outline-danger" (click)="openCancelSubscription(property)">
-            <i class="bi bi-slash-circle me-1"></i> Schedule Cancellation
+          <button class="db-cta-btn db-cta-btn--cancel" (click)="openCancelSubscription(property)">
+            <i class="bi bi-slash-circle me-2"></i>Schedule Cancellation
           </button>
           }
           @else if (property.has_subscription === 3) {
-          <span class="soft-pill soft-pill--warning">
-            <i class="bi bi-clock-history me-1"></i>
-            Scheduled To End {{ subscriptionEndsLabel(property) || 'at month end' }}
-          </span>
+          <div class="db-scheduled-badge">
+            <i class="bi bi-clock-history me-2"></i>
+            Auto-pay scheduled to end {{ subscriptionEndsLabel(property) || 'at month end' }}
+          </div>
           }
           @else if (property.has_subscription === 2) {
-          <span class="soft-pill soft-pill--neutral">
-            <i class="bi bi-info-circle me-1"></i> Subscription Cancelled
-          </span>
+          <div class="db-cancelled-badge">
+            <i class="bi bi-info-circle me-2"></i>Subscription Cancelled
+          </div>
           }
+
         </div>
       </div>
       }
@@ -331,30 +383,28 @@
   </div>
   }
 
+  <!-- ═══════════════════════ EMPTY STATES ═══════════════════════ -->
   @if (isTenant && properties.length === 0) {
-  <div class="empty-state-panel">
-    <div class="empty-state-icon">
+  <div class="db-empty">
+    <div class="db-empty__icon">
       <i class="bi bi-house-x"></i>
     </div>
-    <h5 class="fw-semibold">No Property Assigned</h5>
-    <p class="text-muted mb-0">
-      You currently don't have any assigned properties.
-    </p>
+    <h3 class="db-empty__title">No Property Assigned</h3>
+    <p class="db-empty__sub">You don't have any active tenancies yet. Your owner or manager will assign one to you.</p>
   </div>
   }
 
-  @if (isOwnerManager && pendingApprovalCount() === 0) {
-  <div class="empty-state-panel">
-    <div class="empty-state-icon">
+  @if (isOwnerManager && pendingApprovalCount() === 0 && properties.length === 0) {
+  <div class="db-empty">
+    <div class="db-empty__icon">
       <i class="bi bi-clipboard-check"></i>
     </div>
-    <h5 class="fw-semibold">No Pending Approvals</h5>
-    <p class="text-muted mb-0">
-      Approval requests for manual rent and security deposits will appear here when tenants submit them.
-    </p>
+    <h3 class="db-empty__title">All Clear</h3>
+    <p class="db-empty__sub">No pending approvals. Requests for manual rent and security deposits will appear here.</p>
   </div>
   }
 
+  <!-- ═══════════════════════ MODALS ═══════════════════════ -->
   @if (showPayModal && selectedTenancyId !== null && selectedRent !== null) {
   <app-rent-subscription [tenancyId]="selectedTenancyId!" [rent]="selectedRent!" [baseRent]="selectedBaseRent ?? selectedRent!"
     [lateFeeAmount]="selectedLateFee ?? 0" [mode]="payModalMode"
@@ -384,24 +434,31 @@
   </app-confirm-modal>
 </div>
 
+<!-- ═══════════════════════ MEDIA MODAL ═══════════════════════ -->
 <c-modal [visible]="mediaPreviewVisible" (visibleChange)="mediaPreviewVisible = $event" size="lg">
-  <c-modal-header>
-    <h5 cModalTitle>{{ mediaPreviewTitle }} - Added Media</h5>
+  <c-modal-header class="media-modal-header">
+    <div>
+      <h5 cModalTitle class="mb-0">{{ mediaPreviewTitle }}</h5>
+      <small class="text-muted">{{ mediaPreviewItems.length }} file{{ mediaPreviewItems.length !== 1 ? 's' : '' }} attached</small>
+    </div>
     <button cButtonClose (click)="mediaPreviewVisible = false"></button>
   </c-modal-header>
-  <c-modal-body>
+  <c-modal-body class="media-modal-body">
     @if (!mediaPreviewItems.length) {
-    <p class="text-muted mb-0">No media available.</p>
+    <div class="media-empty-state">
+      <i class="bi bi-images"></i>
+      <p>No media available for this property.</p>
+    </div>
     } @else {
     <div class="property-media-grid">
       @for (item of mediaPreviewItems; track item.url) {
       <a [href]="item.url" target="_blank" rel="noopener" class="property-media-card">
         @if (item.isImage) {
-        <img [src]="item.url" [alt]="item.name" />
+        <img [src]="item.url" [alt]="item.name" loading="lazy" />
         } @else {
         <div class="property-media-file"><i class="bi bi-file-earmark-text"></i></div>
         }
-        <span>{{ item.name }}</span>
+        <span title="{{ item.name }}">{{ item.name }}</span>
       </a>
       }
     </div>

@@ -250,3 +250,130 @@ textarea.form-control {
   padding: 0 1rem;
 }
 
+// ─── Global File Upload Zone ──────────────────────────────────────────────────
+// Replace any bare <input type="file" class="form-control"> with this component:
+//
+//  <label class="file-upload-zone">
+//    <input type="file" hidden ... />
+//    <div class="file-upload-zone__inner">
+//      <i class="bi bi-cloud-arrow-up file-upload-zone__icon"></i>
+//      <span class="file-upload-zone__label">Drop files here or <u>browse</u></span>
+//      <span class="file-upload-zone__hint">PDF, images or docs · max 5 MB</span>
+//    </div>
+//  </label>
+
+.file-upload-zone {
+  position: relative;
+  display: block;
+  width: 100%;
+  border: 2px dashed #d0dbe8;
+  border-radius: var(--pl-control-radius);
+  background: #f8fbfd;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  text-align: center;
+
+  &:hover,
+  &:focus-within {
+    border-color: var(--pl-input-focus-border);
+    background: #f0f6ff;
+
+    .file-upload-zone__icon {
+      color: var(--pl-primary);
+      transform: translateY(-2px);
+    }
+  }
+
+  // Native input sits invisibly over the whole zone
+  input[type='file'] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+}
+
+.file-upload-zone__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 1.4rem 1rem;
+  pointer-events: none; // click passes through to the hidden input
+}
+
+.file-upload-zone__icon {
+  font-size: 1.9rem;
+  color: #8fb4d8;
+  transition: color 0.2s ease, transform 0.2s ease;
+  line-height: 1;
+}
+
+.file-upload-zone__label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #3d5a73;
+
+  u {
+    text-decoration-color: var(--pl-primary);
+    color: var(--pl-primary);
+  }
+}
+
+.file-upload-zone__hint {
+  font-size: 0.76rem;
+  color: #8fa8c0;
+}
+
+// Selected file chip row (rendered below the zone by the template)
+.file-upload-zone__files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
+
+.file-upload-zone__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: #eef4ff;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1d4ed8;
+  max-width: 240px;
+
+  span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  button {
+    display: flex;
+    align-items: center;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: #6b7da8;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    transition: color 0.15s;
+
+    &:hover { color: #dc2626; }
+  }
+}
+
+// Compact single-file variant (e.g. rent deed upload — no icon, tighter padding)
+.file-upload-zone--compact {
+  .file-upload-zone__inner { padding: 0.9rem 1rem; }
+  .file-upload-zone__icon { font-size: 1.4rem; }
+}
+

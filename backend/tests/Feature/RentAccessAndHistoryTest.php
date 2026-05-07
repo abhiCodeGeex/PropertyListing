@@ -1377,6 +1377,7 @@ class RentAccessAndHistoryTest extends TestCase
                 'payment_intent',
                 'pi_connect_payout',
                 'rent_deposit',
+                'inr',
                 'ch_connect_payout'
             )
             ->andReturnNull();

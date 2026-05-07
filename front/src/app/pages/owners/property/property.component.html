@@ -40,57 +40,64 @@
                 </div>
 
                 <div class="entity-card__stack">
-                    <div class="entity-card__meta">
-                        <div>
-                            <div class="entity-card__meta-label">Monthly Rent</div>
-                            <div class="entity-card__meta-value">{{ formatCurrency(property.monthlyRent) }}</div>
+                    <div class="property-card__facts mb-3">
+                        <div class="property-card__fact">
+                            <span class="property-card__fact-label">Monthly Rent</span>
+                            <strong>{{ formatCurrency(property.monthlyRent) }}</strong>
                         </div>
-                        <div class="metric-chip">{{ property.paymentMode }}</div>
+                        <div class="property-card__fact">
+                            <span class="property-card__fact-label">Mode</span>
+                            <span class="metric-chip mt-2 w-fit d-inline-block">{{ property.paymentMode }}</span>
+                        </div>
                     </div>
 
-                    <div>
-                        <div class="entity-card__meta-label mb-2">Manager</div>
-                        @if (property.manager?.name) {
-                        <span class="soft-pill soft-pill--primary">{{ property?.manager?.name }}</span>
-                        } @else {
-                        <span class="soft-pill soft-pill--neutral">Not Assigned</span>
-                        }
-                    </div>
+                    <div class="property-card__facts mb-3">
+                        <div class="property-card__fact">
+                            <span class="property-card__fact-label">Manager</span>
+                            <div class="mt-2">
+                                @if (property.manager?.name) {
+                                <span class="soft-pill soft-pill--primary">{{ property?.manager?.name }}</span>
+                                } @else {
+                                <span class="soft-pill soft-pill--neutral">Not Assigned</span>
+                                }
+                            </div>
+                        </div>
 
-                    <div>
-                        <div class="entity-card__meta-label mb-2">Tenants</div>
-                        <div class="entity-card__badges">
-                            @if (property.tenants?.length) {
-                            @for (t of property.tenants; track t.id) {
-                            <span class="soft-pill soft-pill--success">{{ t.name }}</span>
-                            }
-                            } @else {
-                            <span class="soft-pill soft-pill--neutral">Vacant</span>
-                            }
+                        <div class="property-card__fact">
+                            <span class="property-card__fact-label">Tenants</span>
+                            <div class="entity-card__badges mt-2">
+                                @if (property.tenants?.length) {
+                                @for (t of property.tenants; track t.id) {
+                                <span class="soft-pill soft-pill--success">{{ t.name }}</span>
+                                }
+                                } @else {
+                                <span class="soft-pill soft-pill--neutral">Vacant</span>
+                                }
+                            </div>
                         </div>
                     </div>
 
                     @if (property.media?.length) {
-                    <div class="property-media-inline">
-                        <button cButton color="info" variant="outline" size="sm"
+                    <div class="property-media-inline mt-2">
+                        <button cButton color="info" variant="outline" size="sm" class="w-100 rounded-pill"
                             (click)="openPropertyMediaPreview(property)">
-                            View Added Media ({{ property.media.length }})
+                            <c-icon name="cil-image" class="me-1"></c-icon> View Added Media ({{ property.media?.length }})
                         </button>
                     </div>
                     }
                 </div>
 
                 <div class="entity-card__footer d-flex justify-content-between align-items-center">
-                    <div class="entity-card__actions">
+                    <div class="entity-card__actions d-flex gap-2">
                         @if (canManageProperty(property)) {
-                        <button cButton color="warning" size="sm" class="interactive-icon-btn"
-                            (click)="openEditModal(property)">
-                                <c-icon name="cil-pencil" size="sm" class="me-1"></c-icon>
+                        <button cButton color="warning" size="sm" class="interactive-icon-btn d-flex align-items-center justify-content-center text-white rounded-circle shadow-sm"
+                            (click)="openEditModal(property)" style="width: 32px; height: 32px; padding: 0;">
+                                <c-icon name="cil-pencil" size="sm"></c-icon>
                         </button>
 
-                        <button cButton color="danger" size="sm" class="interactive-icon-btn"
-                            (click)="confirmDelete(property)">
-                                <c-icon name="cil-trash" size="sm" class="me-1"></c-icon>
+                        <button cButton color="danger" size="sm" class="interactive-icon-btn d-flex align-items-center justify-content-center text-white rounded-circle shadow-sm"
+                            (click)="confirmDelete(property)" style="width: 32px; height: 32px; padding: 0;">
+                                <c-icon name="cil-trash" size="sm"></c-icon>
                         </button>
                         }
                     </div>
@@ -259,14 +266,39 @@
                 @if (shouldShowMediaSection()) {
                 <div class="mb-3 col-md-12">
                     <label>Property Media (Images / Documents)</label>
-                    <input type="file" class="form-control" multiple (change)="onMediaSelected($event)" accept="image/*,.pdf,.doc,.docx" />
-                    <div class="form-text">Upload visuals/docs for semi or fully furnished properties.</div>
-                    @if (selectedMediaFiles.length) {
-                    <div class="selected-media-preview mt-2">
+                    <label class="file-upload-zone">
+                        <input type="file" multiple (change)="onMediaSelected($event)" accept="image/*,.pdf,.doc,.docx" />
+                        <div class="file-upload-zone__inner">
+                            <i class="bi bi-images file-upload-zone__icon"></i>
+                            <span class="file-upload-zone__label">Drop files here or <u>browse</u></span>
+                            <span class="file-upload-zone__hint">Images, PDF, Word · any size</span>
+                        </div>
+                    </label>
+                    <div class="form-text mt-1">Upload visuals/docs for semi or fully furnished properties.</div>
+
+                    @if (existingMedia.length || selectedMediaFiles.length) {
+                    <div class="file-upload-zone__files mt-2">
+                        @for (media of existingMedia; track media.id; let i = $index) {
+                        <div class="file-upload-zone__chip">
+                            <i class="bi bi-file-earmark-check" style="color:#16a34a;flex-shrink:0"></i>
+                            <span>
+                                <a [href]="media.file_url || media.url" target="_blank" class="text-decoration-none" style="color:inherit">
+                                  {{ media.original_name || media.name || 'File ' + (i + 1) }}
+                                </a>
+                            </span>
+                            <button type="button" (click)="removeExistingMedia(i)">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                        }
+
                         @for (file of selectedMediaFiles; track file.name + $index; let i = $index) {
-                        <div class="selected-media-item">
-                            <span class="text-truncate">{{ file.name }}</span>
-                            <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeSelectedMedia(i)">Remove</button>
+                        <div class="file-upload-zone__chip">
+                            <i class="bi bi-file-earmark-plus" style="flex-shrink:0"></i>
+                            <span>{{ file.name }}</span>
+                            <button type="button" (click)="removeSelectedMedia(i)">
+                                <i class="bi bi-x"></i>
+                            </button>
                         </div>
                         }
                     </div>
@@ -408,25 +440,31 @@
 <app-property-manager-assign (managerAssigned)="onManagerAssigned()"></app-property-manager-assign>
 
 <c-modal [visible]="mediaPreviewVisible" (visibleChange)="mediaPreviewVisible = $event" size="lg">
-    <c-modal-header>
-        <h5 cModalTitle>{{ mediaPreviewTitle }} - Added Media</h5>
+    <c-modal-header class="media-modal-header">
+        <div>
+            <h5 cModalTitle class="mb-0">{{ mediaPreviewTitle }}</h5>
+            <small class="text-muted">{{ mediaPreviewItems.length }} file{{ mediaPreviewItems.length !== 1 ? 's' : '' }} attached</small>
+        </div>
         <button cButtonClose (click)="mediaPreviewVisible = false"></button>
     </c-modal-header>
-    <c-modal-body>
+    <c-modal-body class="media-modal-body">
         @if (!mediaPreviewItems.length) {
-        <p class="text-muted mb-0">No media available.</p>
+        <div class="media-empty-state">
+            <i class="bi bi-images"></i>
+            <p>No media available for this property.</p>
+        </div>
         } @else {
         <div class="property-media-grid">
             @for (item of mediaPreviewItems; track item.url) {
             <a [href]="item.url" target="_blank" rel="noopener" class="property-media-card">
                 @if (item.isImage) {
-                <img [src]="item.url" [alt]="item.name" />
+                <img [src]="item.url" [alt]="item.name" loading="lazy" />
                 } @else {
                 <div class="property-media-file">
                     <i class="bi bi-file-earmark-text"></i>
                 </div>
                 }
-                <span>{{ item.name }}</span>
+                <span title="{{ item.name }}">{{ item.name }}</span>
             </a>
             }
         </div>

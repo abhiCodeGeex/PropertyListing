@@ -68,29 +68,34 @@
       </div>
 
       <div class="col-md-6">
-        <label for="attachments" class="form-label fw-semibold">Attachments</label>
-        <input
-          id="attachments"
-          type="file"
-          class="form-control"
-          multiple
-          [disabled]="submitting"
-          (change)="onFileChange($event)"
-        />
-        <div class="form-text">Upload photos, PDFs, or supporting documents up to 10 MB each.</div>
+        <label class="form-label fw-semibold">Attachments</label>
+        <label class="file-upload-zone">
+          <input
+            id="attachments"
+            type="file"
+            multiple
+            [disabled]="submitting"
+            (change)="onFileChange($event)"
+          />
+          <div class="file-upload-zone__inner">
+            <i class="bi bi-cloud-arrow-up file-upload-zone__icon"></i>
+            <span class="file-upload-zone__label">Drop files or <u>browse</u></span>
+            <span class="file-upload-zone__hint">Photos, PDFs or docs · max 10 MB each</span>
+          </div>
+        </label>
       </div>
 
       <div class="col-12" *ngIf="selectedFiles.length">
-        <div class="d-flex flex-wrap gap-2">
-          <button
-            type="button"
-            class="btn btn-sm btn-light attachment-chip"
+        <div class="file-upload-zone__files">
+          <div
+            class="file-upload-zone__chip"
             *ngFor="let file of selectedFiles; let index = index"
-            [disabled]="submitting"
-            (click)="removeFile(index)"
           >
-            {{ file.name }} <span class="text-body-secondary">remove</span>
-          </button>
+            <span>{{ file.name }}</span>
+            <button type="button" [disabled]="submitting" (click)="removeFile(index)">
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
         </div>
       </div>
 

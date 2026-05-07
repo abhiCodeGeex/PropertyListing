@@ -172,6 +172,19 @@ class PropertyController extends Controller
 
     private function syncPropertyMedia(Request $request, Property $property): void
     {
+        if ($request->has('deleted_media') && is_array($request->deleted_media)) {
+            $mediaToDelete = PropertyMedia::whereIn('id', $request->deleted_media)
+                ->where('property_id', $property->id)
+                ->get();
+
+            foreach ($mediaToDelete as $media) {
+                if ($media->file_path) {
+                    Storage::disk('public')->delete($media->file_path);
+                }
+                $media->delete();
+            }
+        }
+
         if (! $request->hasFile('media')) {
             return;
         }
@@ -346,9 +359,12 @@ class PropertyController extends Controller
         }
         $property->save();
 
+        // Sync property media (handle file uploads and deletions)
+        $this->syncPropertyMedia($request, $property);
+
         return response()->json([
             'message' => 'Property updated successfully!',
-            'property' => $property->load('owner'),
+            'property' => $property->load(['owner', 'media']),
         ]);
     }
 
@@ -484,7 +500,7 @@ class PropertyController extends Controller
 
         $currentMonth = Carbon::now()->startOfMonth()->toDateString();
         $properties = $user->assignedProperties()
-            ->with('latestRentDeed')
+            ->with(['latestRentDeed', 'media'])
             ->get();
         $tenancies = PropertyTenant::query()
             ->with('rentDeed')

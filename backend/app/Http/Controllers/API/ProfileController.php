@@ -155,10 +155,23 @@ class ProfileController extends Controller
             'otp' => 'otp',
         ]);
 
+        // Debug logging for OTP verification
+        Log::info('Aadhaar OTP Verification Endpoint', [
+            'reference_id' => $request->reference_id,
+            'otp' => $request->otp,
+            'otp_type' => gettype($request->otp),
+            'otp_length' => strlen($request->otp),
+            'otp_first_char' => substr($request->otp, 0, 1),
+        ]);
+
         $response = $this->aadhaarService->verifyOtp(
             $request->reference_id,
             $request->otp
         );
+
+        Log::info('Aadhaar OTP Verification Result', [
+            'response' => $response,
+        ]);
 
         return response()->json($response);
     }

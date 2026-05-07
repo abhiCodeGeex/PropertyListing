@@ -41,18 +41,25 @@
       placeholder="Share an update, request clarification, or confirm completion."
     ></textarea>
 
-    <input type="file" class="form-control" multiple [disabled]="submitting" (change)="onFileChange($event)" />
+    <label class="file-upload-zone file-upload-zone--compact">
+      <input type="file" multiple [disabled]="submitting" (change)="onFileChange($event)" />
+      <div class="file-upload-zone__inner">
+        <i class="bi bi-paperclip file-upload-zone__icon"></i>
+        <span class="file-upload-zone__label">Attach files or <u>browse</u></span>
+        <span class="file-upload-zone__hint">Photos, PDFs or docs</span>
+      </div>
+    </label>
 
-    <div class="comment-form__attachments" *ngIf="selectedFiles.length">
-      <button
-        type="button"
-        class="btn btn-sm btn-light"
+    <div class="file-upload-zone__files" *ngIf="selectedFiles.length">
+      <div
+        class="file-upload-zone__chip"
         *ngFor="let file of selectedFiles; let index = index"
-        [disabled]="submitting"
-        (click)="removeFile(index)"
       >
-        {{ file.name }} <span class="text-body-secondary">remove</span>
-      </button>
+        <span>{{ file.name }}</span>
+        <button type="button" [disabled]="submitting" (click)="removeFile(index)">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
     </div>
 
     <div class="comment-form__actions">

@@ -254,6 +254,8 @@ export class PropertyComponent implements OnInit, OnDestroy {
     this.selectedProperty = null;
     this.formErrorService.clearServerErrors(this.form);
     this.selectedMediaFiles = [];
+    this.existingMedia = [];
+    this.deletedMediaIds = [];
     this.form.reset({
       propertyName: '',
       propertyType: '',
@@ -285,6 +287,8 @@ export class PropertyComponent implements OnInit, OnDestroy {
     this.selectedProperty = property;
     this.formErrorService.clearServerErrors(this.form);
     this.selectedMediaFiles = [];
+    this.existingMedia = property.media ? [...property.media] : [];
+    this.deletedMediaIds = [];
     this.form.patchValue(property);
     this.form.markAsPristine();
     this.form.markAsUntouched();
@@ -503,14 +507,26 @@ export class PropertyComponent implements OnInit, OnDestroy {
   }
 
   selectedMediaFiles: File[] = [];
+  existingMedia: any[] = [];
+  deletedMediaIds: number[] = [];
 
   onMediaSelected(event: Event) {
     const input = event.target as HTMLInputElement;
-    this.selectedMediaFiles = Array.from(input.files || []);
+    if (input.files && input.files.length) {
+      this.selectedMediaFiles = [...this.selectedMediaFiles, ...Array.from(input.files)];
+      input.value = ''; // Reset input to allow selecting same files again if removed
+    }
   }
 
   removeSelectedMedia(index: number) {
     this.selectedMediaFiles = this.selectedMediaFiles.filter((_, i) => i !== index);
+  }
+
+  removeExistingMedia(index: number) {
+    const removed = this.existingMedia.splice(index, 1)[0];
+    if (removed && removed.id) {
+      this.deletedMediaIds.push(removed.id);
+    }
   }
 
   openPropertyMediaPreview(property: Property): void {
@@ -552,10 +568,15 @@ export class PropertyComponent implements OnInit, OnDestroy {
       securityAmount: rawValue.securityAmount === '' || rawValue.securityAmount === null ? 0 : Number(rawValue.securityAmount),
     };
 
-    if (this.selectedMediaFiles.length) {
+    if (this.selectedMediaFiles.length || this.deletedMediaIds.length) {
       const formData = new FormData();
-      Object.entries(payload).forEach(([key, value]) => formData.append(key, value as any));
+      Object.entries(payload).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== '') {
+          formData.append(key, value as string | Blob);
+        }
+      });
       this.selectedMediaFiles.forEach((file) => formData.append('media[]', file));
+      this.deletedMediaIds.forEach((id) => formData.append('deleted_media[]', String(id)));
       return formData;
     }
 

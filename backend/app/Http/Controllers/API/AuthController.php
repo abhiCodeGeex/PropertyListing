@@ -85,25 +85,75 @@ class AuthController extends Controller
         }
 
         /** Verify Google reCAPTCHA */
+        $recaptchaSecret = env('GOOGLE_RECAPTCHA_SECRET');
+        $recaptchaSiteKey = env('RECAPTCHA_SITE_KEY');
+        
+        // Validate that both keys are configured
+        if (empty($recaptchaSecret)) {
+            Log::error('reCAPTCHA secret key not configured');
+            return response()->json([
+                'message' => 'CAPTCHA configuration error. Please contact support.',
+            ], 500);
+        }
+
+        if (empty($request->recaptcha)) {
+            Log::warning('reCAPTCHA token missing from request');
+            return response()->json([
+                'message' => 'CAPTCHA verification required. Please complete the CAPTCHA.',
+            ], 422);
+        }
+
         try {
-            $response = Http::timeout(15)
-                ->acceptJson()
+            $captchaResponse = Http::timeout(15)
                 ->asForm()
                 ->post('https://www.google.com/recaptcha/api/siteverify', [
-                    'secret' => config('services.recaptcha.secret'),
+                    'secret'   => $recaptchaSecret,
                     'response' => $request->recaptcha,
+                    'remoteip' => $request->ip(),
                 ]);
         } catch (\Throwable $e) {
-            Log::warning('reCAPTCHA verification request failed', ['error' => $e->getMessage()]);
+            Log::warning('reCAPTCHA verification request failed', [
+                'error' => $e->getMessage(),
+                'exception_type' => get_class($e),
+            ]);
 
             return response()->json([
                 'message' => 'Could not verify captcha. Check your connection and try again.',
             ], 422);
         }
 
-        if ($response->failed() || ! $response->json('success')) {
-            return response()->json(['message' => 'Captcha verification failed. Please try again.'], 422);
+        $responseData = $captchaResponse->json();
+        
+        Log::info('reCAPTCHA verification', [
+            'success' => $responseData['success'] ?? null,
+            'score' => $responseData['score'] ?? null,
+            'hostname' => $responseData['hostname'] ?? null,
+            'error_codes' => $responseData['error-codes'] ?? null,
+        ]);
+
+        if ($captchaResponse->failed() || ! ($responseData['success'] ?? false)) {
+            Log::warning('reCAPTCHA failed', [
+                'response' => $responseData,
+                'http_status' => $captchaResponse->status(),
+            ]);
+            return response()->json([
+                'message' => 'Captcha verification failed. Please try again.',
+            ], 422);
         }
+
+        // Validate hostname if provided in response (security check)
+        $expectedHostname = parse_url(config('app.url'), PHP_URL_HOST);
+        $responseHostname = $responseData['hostname'] ?? null;
+        
+        if ($responseHostname && $expectedHostname && $responseHostname !== $expectedHostname) {
+            Log::warning('reCAPTCHA hostname mismatch', [
+                'expected' => $expectedHostname,
+                'received' => $responseHostname,
+            ]);
+            // Don't fail on hostname mismatch as it may be a development environment
+            // but log it for security monitoring
+        }
+
 
         /** Create user inside transaction */
         DB::beginTransaction();

@@ -638,6 +638,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       || property?.security_deposit_status === 'pending'
       || property?.security_deposit_status === 'manual_pending'
       || property?.has_subscription === 3
+      || !!property?.media?.length
       || !property?.has_rent_deed;
   }
 

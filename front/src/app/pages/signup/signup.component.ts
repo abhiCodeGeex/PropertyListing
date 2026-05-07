@@ -80,13 +80,37 @@ export class SignupComponent implements AfterViewChecked {
 
   ngAfterViewChecked() {
     if (this.captchaContainer && !this.captchaRendered) {
-      this.captchaRendered = true; // mark it as rendered
-      grecaptcha.render(this.captchaContainer.nativeElement, {
-        sitekey: this.siteKey,
-        callback: (response: string) => {
-          this.signupForm.get('recaptcha')?.setValue(response);
-        },
-      });
+      this.captchaRendered = true;
+      try {
+        grecaptcha.render(this.captchaContainer.nativeElement, {
+          sitekey: this.siteKey,
+          callback: (response: string) => {
+            // Must run inside NgZone so Angular change detection fires
+            // and the [disabled] binding on the submit button updates.
+            this.ngZone.run(() => {
+              this.captchaResponse = response;
+              this.signupForm.get('recaptcha')?.setValue(response);
+            });
+          },
+          'expired-callback': () => {
+            // Token expired — clear form control so the form goes invalid
+            // and the submit button disables itself again.
+            this.ngZone.run(() => {
+              this.captchaResponse = null;
+              this.signupForm.get('recaptcha')?.setValue('');
+            });
+          },
+          'error-callback': () => {
+            this.ngZone.run(() => {
+              this.captchaResponse = null;
+              this.signupForm.get('recaptcha')?.setValue('');
+            });
+          },
+        });
+      } catch (e) {
+        // grecaptcha not ready yet — reset flag so we retry on next cycle
+        this.captchaRendered = false;
+      }
     }
   }
 
@@ -115,8 +139,21 @@ export class SignupComponent implements AfterViewChecked {
       this.toast.showError('Please correct the highlighted fields.');
       return;
     }
+
+    // Ensure CAPTCHA token is present
+    if (!this.captchaResponse || this.captchaResponse.trim() === '') {
+      this.toast.showError('Please complete the CAPTCHA verification.');
+      return;
+    }
+
     const payload = { ...this.signupForm.value };
     this.loading = true;
+
+    console.log('[Signup] Submitting registration with CAPTCHA token:', {
+      tokenLength: this.captchaResponse.length,
+      tokenStart: this.captchaResponse.substring(0, 10) + '...'
+    });
+
     this.usersService.register(payload).subscribe({
       next: () => {
         this.loading = false;
@@ -125,6 +162,22 @@ export class SignupComponent implements AfterViewChecked {
       },
       error: (err) => {
         this.loading = false;
+
+        console.error('[Signup] Registration error:', err);
+
+        // Reset CAPTCHA widget so the user gets a fresh token on retry.
+        // Without this, the submitted (now-used) token stays in the form
+        // and subsequent attempts always fail CAPTCHA validation.
+        try {
+          if (typeof grecaptcha !== 'undefined') {
+            grecaptcha.reset();
+          }
+        } catch (e) {
+          console.warn('[Signup] Error resetting reCAPTCHA:', e);
+        }
+        this.captchaResponse = null;
+        this.signupForm.get('recaptcha')?.setValue('');
+
         if (err.status === 422 && err.error?.errors) {
           this.formErrorService.applyServerErrors(this.signupForm, err.error.errors, this.backendToFormFieldMap, 'serverError');
           this.error = 'Please correct the highlighted fields.';

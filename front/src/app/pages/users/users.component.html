@@ -89,16 +89,15 @@
 
             <td>
               <div class="d-flex flex-wrap gap-2">
-                <button cButton color="warning" size="sm" class="interactive-icon-btn" (click)="openEditModal(user)">
-                  <c-icon name="cil-pencil" size="sm" class="me-1"></c-icon>
+                <button class="btn btn-light interactive-icon-btn" (click)="openEditModal(user)" title="Edit User">
+                  <c-icon name="cil-pencil" size="sm"></c-icon>
                 </button>
-                <button cButton color="danger" size="sm" class="interactive-icon-btn" (click)="confirmDelete(user)">
-                  <c-icon name="cil-trash" size="sm" class="me-1"></c-icon>
+                <button class="btn btn-light interactive-icon-btn text-danger" (click)="confirmDelete(user)" title="Delete User">
+                  <c-icon name="cil-trash" size="sm"></c-icon>
                 </button>
 
                 @if (hasPropertyRole(user)) {
-                <button cButton color="info" size="sm" class="interactive-icon-btn" (click)="goToProperties(user)"
-                  title="View Properties">
+                <button class="btn btn-light interactive-icon-btn text-primary" (click)="goToProperties(user)" title="View Properties">
                   <c-icon name="cil-home" size="sm"></c-icon>
                 </button>
                 }

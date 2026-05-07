@@ -310,8 +310,15 @@
                 <!-- File Upload -->
                 <div class="col-md-12 mt-3">
                     <label class="form-label fw-semibold">Rent Deed File (PDF or Image)</label>
-                    <input type="file" class="form-control" (change)="handleFileInput($event)" accept=".pdf,image/*" />
-                    <div class="form-text">Upload a scanned copy of the rent deed. Max size 5MB.</div>
+                    <label class="file-upload-zone file-upload-zone--compact">
+                        <input type="file" (change)="handleFileInput($event)" accept=".pdf,image/*" />
+                        <div class="file-upload-zone__inner">
+                            <i class="bi bi-file-earmark-arrow-up file-upload-zone__icon"></i>
+                            <span class="file-upload-zone__label">Drop file here or <u>browse</u></span>
+                            <span class="file-upload-zone__hint">PDF or image · max 5 MB</span>
+                        </div>
+                    </label>
+                    <div class="form-text mt-1">Upload a scanned copy of the rent deed.</div>
                     @if (isEditMode && selectedDeed?.file_url) {
                         <div class="mt-2">
                             <a [href]="selectedDeed.file_url" target="_blank" class="text-decoration-none">
