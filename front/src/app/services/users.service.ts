@@ -63,6 +63,10 @@ export class UsersService extends BaseApiService {
     return this.post('/profile', userData);
   }
 
+  updateProfilePartial(userData: FormData | any): Observable<any> {
+    return this.post('/profile/partial', userData);
+  }
+
   createStripeConnectOnboardingLink(): Observable<any> {
     return this.post('/profile/payment-settings/stripe-connect/link');
   }
