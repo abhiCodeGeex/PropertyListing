@@ -572,3 +572,199 @@ body {
     }
   }
 }
+
+/* ========================================
+   BUTTON LOADER STYLES
+   Enterprise-grade loading states for buttons
+   ======================================== */
+
+.btn-loading {
+  position: relative;
+  pointer-events: none !important;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.btn-loader-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-loader-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: btn-spin 0.7s linear infinite;
+}
+
+/* Spinner for light buttons */
+.btn-light .btn-loader-spinner,
+.btn-outline .btn-loader-spinner {
+  border-color: rgba(0, 0, 0, 0.2);
+  border-top-color: #1e293b;
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.btn-loader-text {
+  font-weight: 600;
+  letter-spacing: 0.025em;
+}
+
+/* Success state */
+.btn-success {
+  background-color: #16a34a !important;
+  border-color: #16a34a !important;
+  color: #ffffff !important;
+}
+
+/* Error state */
+.btn-error {
+  background-color: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+/* Small button spinner */
+.btn-sm .btn-loader-spinner {
+  width: 12px;
+  height: 12px;
+  border-width: 1.5px;
+}
+
+/* Large button spinner */
+.btn-lg .btn-loader-spinner {
+  width: 20px;
+  height: 20px;
+  border-width: 2.5px;
+}
+
+/* ========================================
+   MESSAGE SENDING INDICATOR
+   For chat message sending states
+   ======================================== */
+
+.message-sending-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  margin-left: 8px;
+}
+
+.message-sending-indicator__dot {
+  width: 4px;
+  height: 4px;
+  background: #94a3b8;
+  border-radius: 50%;
+  animation: message-pulse 1.2s ease-in-out infinite;
+}
+
+.message-sending-indicator__dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.message-sending-indicator__dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes message-pulse {
+  0%, 80%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ========================================
+   INLINE ACTION LOADER
+   For row-level actions in tables
+   ======================================== */
+
+.action-loader {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.action-loader__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: btn-spin 0.7s linear infinite;
+}
+
+/* ========================================
+   PAGE TRANSITION LOADER
+   Minimal loading indicator for page transitions
+   ======================================== */
+
+.page-transition-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 99999;
+  overflow: hidden;
+  background: transparent;
+}
+
+.page-transition-loader::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -40%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+  animation: page-transition 1.5s ease-in-out infinite;
+}
+
+@keyframes page-transition {
+  0% {
+    left: -40%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* ========================================
+   SCROLL LOADING INDICATOR
+   For infinite scroll loading
+   ======================================== */
+
+.scroll-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  gap: 8px;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.scroll-loader__spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: btn-spin 0.7s linear infinite;
+}

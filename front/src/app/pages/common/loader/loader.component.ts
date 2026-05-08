@@ -1,6 +1,5 @@
-import { Component, Input, computed, inject } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { LoaderService } from '../../../services/loder.service';
 
 @Component({
   selector: 'app-loader',
@@ -11,7 +10,4 @@ import { LoaderService } from '../../../services/loder.service';
 })
 export class LoaderComponent {
   @Input() loading: boolean = false;
-
-  private readonly globalLoader = inject(LoaderService);
-  protected readonly shouldRender = computed(() => this.loading && !this.globalLoader.loading());
 }

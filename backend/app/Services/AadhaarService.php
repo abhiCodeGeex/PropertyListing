@@ -8,52 +8,121 @@ use Illuminate\Support\Facades\Log;
 
 class AadhaarService
 {
-    protected $baseUrl;
-
-    protected $apiKey;
-
-    protected $apiToken;
-
-    public function __construct()
+    /**
+     * Always read credentials directly from the environment so that updating
+     * .env values takes effect immediately without needing a cache:clear or
+     * server restart.  config() / the config cache is intentionally bypassed
+     * for these sensitive, frequently-rotated values.
+     */
+    protected function apiKey(): string
     {
-        $this->baseUrl = config('services.aadhaar.base_url');
-        $this->apiKey = config('services.aadhaar.api_key');
-        $this->apiToken = config('services.aadhaar.api_token');
+        return env('AADHAAR_API_KEY', '');
+    }
+
+    protected function apiSecret(): string
+    {
+        return env('AADHAAR_API_SECRET', '');
+    }
+
+    protected function apiToken(): string
+    {
+        return env('AADHAAR_API_TOKEN', '');
+    }
+
+    protected function baseUrl(): string
+    {
+        return env('AADHAAR_API_URL', 'https://api.sandbox.co.in/kyc/aadhaar/okyc');
     }
 
     /**
-     * Get a valid sandbox JWT, auto-refreshing via Cache when it expires.
+     * Get a valid sandbox JWT, auto-refreshing whenever the cached token is
+     * expired or missing.
      *
-     * The AADHAAR_API_TOKEN env value is a static JWT that expires in ~24 hours.
-     * We cache the fresh token for 55 minutes (tokens are valid for 1 hour)
-     * and re-authenticate transparently before it expires.
+     * Credentials are always read fresh from the environment so that rotating
+     * AADHAAR_API_KEY / AADHAAR_API_SECRET in .env is picked up on the very
+     * next request without any cache:clear or server restart.
      */
     protected function getAuthToken(): string
     {
-        return Cache::remember('aadhaar_auth_token', 3300, function () {
-            $response = Http::withHeaders([
-                'accept'       => 'application/json',
-                'x-api-key'    => $this->apiKey,
-                'x-api-secret' => config('services.aadhaar.api_secret'),
-                'x-api-version' => '1.0',
-            ])->post('https://api.sandbox.co.in/authenticate');
+        $cached = Cache::get('aadhaar_auth_token');
 
-            if ($response->failed()) {
-                // Fall back to the static env token rather than crashing.
-                Log::warning('Aadhaar sandbox re-authentication failed; using static token', [
-                    'status' => $response->status(),
-                ]);
-                return $this->apiToken;
+        // Return the cached token only when it is still valid AND the key it
+        // was issued for matches the current env key (detects credential rotation).
+        $currentKey = $this->apiKey();
+        $cachedKey  = Cache::get('aadhaar_auth_token_key');
+
+        if ($cached && $cachedKey === $currentKey && ! $this->isJwtExpired($cached)) {
+            return $cached;
+        }
+
+        // Token missing, expired, or issued for a different API key – drop it.
+        Cache::forget('aadhaar_auth_token');
+        Cache::forget('aadhaar_auth_token_key');
+
+        $response = Http::withHeaders([
+            'accept'        => 'application/json',
+            'x-api-key'     => $this->apiKey(),
+            'x-api-secret'  => $this->apiSecret(),
+            'x-api-version' => '1.0',
+        ])->post('https://api.sandbox.co.in/authenticate');
+
+        if ($response->failed()) {
+            Log::warning('Aadhaar sandbox re-authentication failed; using static token', [
+                'status' => $response->status(),
+            ]);
+
+            return $this->apiToken();
+        }
+
+        $token = $response->json('access_token');
+
+        if (empty($token)) {
+            Log::warning('Aadhaar sandbox auth response missing access_token; using static token');
+
+            return $this->apiToken();
+        }
+
+        // Cache the fresh token for 55 minutes (tokens are valid for 1 hour).
+        // Also store the API key it was issued for so we can detect rotation.
+        Cache::put('aadhaar_auth_token', $token, 3300);
+        Cache::put('aadhaar_auth_token_key', $currentKey, 3300);
+
+        return $token;
+    }
+
+    /**
+     * Decode a JWT and check whether its `exp` claim has passed.
+     * Returns true (= expired) when the token expires within 60 seconds,
+     * so we never hand out a token that will expire mid-request.
+     */
+    private function isJwtExpired(string $token): bool
+    {
+        try {
+            $parts = explode('.', $token);
+
+            if (count($parts) !== 3) {
+                return true;
             }
 
-            $token = $response->json('access_token');
-            if (empty($token)) {
-                Log::warning('Aadhaar sandbox auth response missing access_token; using static token');
-                return $this->apiToken;
+            // JWT payload is the second segment, base64url-encoded.
+            $payload = json_decode(
+                base64_decode(strtr($parts[1], '-_', '+/')),
+                true
+            );
+
+            if (empty($payload['exp'])) {
+                return false; // No expiry claim – assume still valid.
             }
 
-            return $token;
-        });
+            // Treat the token as expired if it expires within 60 seconds.
+            return $payload['exp'] < (time() + 60);
+        } catch (\Throwable $e) {
+            Log::warning('Could not decode Aadhaar JWT to check expiry', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return true; // Treat unreadable token as expired to force refresh.
+        }
     }
 
     /**
@@ -63,11 +132,11 @@ class AadhaarService
     {
         return Http::withHeaders([
             'accept'        => 'application/json',
-            'x-api-key'     => $this->apiKey,
+            'x-api-key'     => $this->apiKey(),
             'authorization' => $this->getAuthToken(),
             'content-type'  => 'application/json',
             'x-api-version' => '2.0',
-        ])->post("{$this->baseUrl}/otp", [
+        ])->post("{$this->baseUrl()}/otp", [
             '@entity' => 'in.co.sandbox.kyc.aadhaar.okyc.otp.request',
             'aadhaar_number' => $aadhaarNumber,
             'consent' => 'y',
@@ -99,9 +168,9 @@ class AadhaarService
             'accept'        => 'application/json',
             'authorization' => $this->getAuthToken(),
             'content-type'  => 'application/json',
-            'x-api-key'     => $this->apiKey,
+            'x-api-key'     => $this->apiKey(),
             'x-api-version' => '2.0',
-        ])->post("{$this->baseUrl}/otp/verify", $payload);
+        ])->post("{$this->baseUrl()}/otp/verify", $payload);
 
         Log::info('Aadhaar OTP Verification Response', [
             'status' => $response->status(),

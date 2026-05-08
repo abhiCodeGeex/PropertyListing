@@ -64,6 +64,96 @@ class ProfileController extends Controller
         ]);
     }
 
+    /**
+     * Partial update – saves only the fields that are sent (per-step auto-save).
+     * All fields are "sometimes" so missing fields are simply ignored.
+     */
+    public function partialUpdate(Request $request)
+    {
+        $data = $request->validate([
+            // Step 2 – Personal Details
+            'first_name'      => 'sometimes|string|max:255',
+            'last_name'       => 'sometimes|string|max:255',
+            'dob'             => 'sometimes|date',
+            'gender'          => 'sometimes|in:male,female,other',
+            'marital_status'  => 'sometimes|in:single,married,divorced,widowed',
+            'pan'             => ['sometimes', 'nullable', 'regex:/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/'],
+            'aadhar'          => 'sometimes|digits:12',
+            'aadhar_text'     => 'sometimes|nullable|string|max:255',
+            'profile_image'   => 'sometimes|nullable|image|mimes:jpg,jpeg,png|max:2048',
+
+            // Step 3 – Contact Information
+            'current_address' => 'sometimes|string|max:2000',
+            'native_address'  => 'sometimes|string|max:2000',
+            'phone'           => 'sometimes|regex:/^[6-9]\d{9}$/',
+
+            // Step 4 – Account Security (also handled by the full submit, but included for completeness)
+            'username'        => 'sometimes|string|max:100|unique:users,username,'.Auth::id(),
+            'password'        => 'sometimes|nullable|string|min:8|confirmed',
+        ], [], [
+            'dob'             => 'date of birth',
+            'current_address' => 'current address',
+            'native_address'  => 'native address',
+            'aadhar'          => 'aadhaar',
+            'aadhar_text'     => 'verified aadhaar name',
+            'marital_status'  => 'marital status',
+            'profile_image'   => 'profile image',
+        ]);
+
+        $user = Auth::user();
+
+        // Update user-level fields when present
+        if (isset($data['username'])) {
+            $user->username = trim($data['username']);
+        }
+
+        if (isset($data['first_name']) || isset($data['last_name'])) {
+            $profile = $user->profile()->first();
+            $firstName = $data['first_name'] ?? ($profile->first_name ?? '');
+            $lastName  = $data['last_name']  ?? ($profile->last_name  ?? '');
+            $user->name = trim($firstName.' '.$lastName);
+        }
+
+        if (!empty($data['password'])) {
+            $user->password = Hash::make($data['password']);
+        }
+
+        $user->save();
+
+        // Remove user-level fields before filling profile
+        unset($data['username'], $data['email'], $data['password'], $data['password_confirmation']);
+
+        $profile = $user->profile()->firstOrNew(['user_id' => $user->id]);
+
+        // Handle profile image upload
+        if ($request->hasFile('profile_image')) {
+            if ($profile->profile_image && Storage::disk('public')->exists($profile->profile_image)) {
+                Storage::disk('public')->delete($profile->profile_image);
+            }
+            $data['profile_image'] = $request->file('profile_image')->store('profiles', 'public');
+        } else {
+            // Don't touch existing image if no new file was sent
+            unset($data['profile_image']);
+        }
+
+        try {
+            $profile->fill($data);
+            $profile->save();
+        } catch (\Throwable $e) {
+            Log::error('Partial profile save failed', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Failed to save step data. Please try again.',
+            ], 500);
+        }
+
+        return response()->json([
+            'message' => 'Step data saved.',
+            'user'    => $user,
+            'profile' => $profile,
+        ]);
+    }
+
     // Create or Update Profile
     public function storeOrUpdate(Request $request)
     {

@@ -222,6 +222,11 @@ export class UpdateProfileComponent implements OnInit {
       return;
     }
 
+    if (this.step === 1 && this.isVerificationComplete()) {
+      this.step = 2;
+      return;
+    }
+
     if (this.step > 1 && !this.validateCurrentStep()) {
       this.toast.showError('Please correct the highlighted fields before continuing.');
       return;
