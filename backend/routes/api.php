@@ -141,6 +141,7 @@ Route::middleware('auth:api')->group(function () {
     // Profile
     Route::get('profile', [ProfileController::class, 'show']);
     Route::post('profile', [ProfileController::class, 'storeOrUpdate']);
+    Route::post('profile/partial', [ProfileController::class, 'partialUpdate']);
     Route::post('profile/payment-settings/stripe-connect/link', [ProfileController::class, 'createStripeConnectAccountLink']);
     Route::post('profile/payment-settings/stripe-connect/refresh', [ProfileController::class, 'refreshStripeConnectStatus']);
 
