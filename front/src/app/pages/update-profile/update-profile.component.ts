@@ -53,6 +53,7 @@ export class UpdateProfileComponent implements OnInit {
   verifyOtpLoading = false;
   emailError = '';
   profileExists = false;
+  stepSaveLoading = false;
   readonly totalSteps = 4;
   roles: string[] = [];
   stripeConnectState: any = null;
@@ -233,8 +234,80 @@ export class UpdateProfileComponent implements OnInit {
     }
 
     if (this.step < this.totalSteps) {
-      this.step += 1;
+      // Save current step data to the database before advancing
+      this.saveCurrentStepData(() => {
+        this.step += 1;
+      });
     }
+  }
+
+  /** Build a FormData payload containing only the fields relevant to the given step. */
+  private buildStepFormData(stepId: number): FormData {
+    const raw = this.profileForm.getRawValue();
+    const formData = new FormData();
+
+    // Which raw fields to include per step
+    const fieldMap: Record<number, string[]> = {
+      2: ['first_name', 'last_name', 'dob', 'gender', 'marital_status', 'pan', 'aadhar', 'aadhar_text', 'profile_image'],
+      3: ['current_address', 'native_address', 'phone'],
+    };
+
+    const fields = fieldMap[stepId] ?? [];
+
+    fields.forEach(key => {
+      const value = raw[key];
+
+      if (key === 'profile_image') {
+        if (value instanceof File) {
+          formData.append(key, value);
+        }
+        // skip string paths – backend already has it
+        return;
+      }
+
+      if (value === null || value === undefined || value === '') {
+        return;
+      }
+
+      if (value instanceof Date) {
+        formData.append(key, this.formatDate(value));
+        return;
+      }
+
+      if (typeof value === 'object') {
+        formData.append(key, JSON.stringify(value));
+      } else {
+        formData.append(key, value.toString());
+      }
+    });
+
+    return formData;
+  }
+
+  /** Call the partial-update API for the current step, then invoke the callback on success. */
+  private saveCurrentStepData(onSuccess: () => void): void {
+    const formData = this.buildStepFormData(this.step);
+    this.stepSaveLoading = true;
+    this.formErrorService.clearServerErrors(this.profileForm, 'serverError');
+
+    this.usersService.updateProfilePartial(formData).subscribe({
+      next: (res: any) => {
+        this.stepSaveLoading = false;
+        this.profileExists = true;
+        localStorage.setItem('user', JSON.stringify(res.user));
+        localStorage.setItem('profile', JSON.stringify(res.profile));
+        this.profileService.setProfile(res.profile);
+        onSuccess();
+      },
+      error: (err) => {
+        this.stepSaveLoading = false;
+        if (!this.formErrorService.applyServerErrors(this.profileForm, err?.error?.errors, {}, 'serverError')) {
+          this.toast.showError(this.toast.extractErrorMessage(err, 'Failed to save step data. Please try again.'));
+          return;
+        }
+        this.toast.showError('Please correct the highlighted fields.');
+      }
+    });
   }
 
   previousStep(): void {
