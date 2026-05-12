@@ -129,6 +129,26 @@ ngx-toastr,
   z-index: 1060 !important;
 }
 
+// =====================================================
+// STRIPE CARD ELEMENT - KEYBOARD & POINTER EVENT FIX
+// Stripe renders its card input as an <iframe>. Modals
+// with focus-trapping or pointer-events restrictions can
+// block keyboard input to the iframe. These rules ensure
+// the Stripe iframe always receives all events.
+// =====================================================
+.__PrivateStripeElement,
+.__PrivateStripeElement iframe,
+.stripe-card-host iframe,
+.card-element iframe,
+#card-element iframe {
+  pointer-events: auto !important;
+  user-select: auto !important;
+}
+
+.__PrivateStripeElement {
+  z-index: auto !important;
+}
+
 :root {
   --pl-bg: #f4f7fb;
   --pl-surface: rgba(255, 255, 255, 0.92);

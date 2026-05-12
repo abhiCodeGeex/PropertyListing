@@ -180,7 +180,12 @@ export class RentDeedComponent implements OnInit, OnDestroy {
   loadTenants() { this.deedService.getTenants().subscribe(res => this.tenants = res); }
   loadProperties() {
     this.deedService.getProperties({}).subscribe((res: any) => {
-      this.properties = res.data.map((item: any) => ({ id: item.id, propertyName: item.property_name, ...item }));
+      this.properties = res.data.map((item: any) => ({
+        id: item.id,
+        propertyName: item.property_name,
+        displayName: `#${item.id} - ${item.property_name}`,
+        ...item
+      }));
       this.syncFilteredPropertyContext();
     });
   }

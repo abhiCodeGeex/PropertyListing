@@ -271,12 +271,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     this.userService.updateManualRent({ tenancy_id: tenancyId, status, rent_schedule_id }).subscribe({
       next: () => {
-        this.rentApprovals = this.rentApprovals.filter(r => r.tenancy_id !== tenancyId);
+        this.rentApprovals = this.rentApprovals.filter(r => r.rent_schedule_id !== rent_schedule_id);
 
         const property = this.properties.find(p => p.tenancy_id === tenancyId);
-        if (property) {
-          property.rent_status = status === 'approved' ? 'paid' : 'pending';
-          if (status === 'approved') property.has_subscription = 1;
+        if (property && status === 'approved') {
+          property.rent_status = 'paid';
         }
 
         this.toaster.showSuccess(`Rent ${status}`);
@@ -592,7 +591,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   primaryAmountValue(property: any): number {
     if (property?.rent_status === 'overdue') {
-      return property?.overdue_total || 0;
+      return property?.payable_now_total || property?.overdue_total || 0;
     }
 
     if (property?.rent_status === 'paid') {

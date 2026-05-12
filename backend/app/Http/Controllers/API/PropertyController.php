@@ -550,6 +550,15 @@ class PropertyController extends Controller
                 now()
             );
 
+            // Include current month in overdue_total when it is overdue
+            $currentMonthIsOverdue = $rentSchedule && in_array($rentSchedule->status, ['pending', 'overdue', 'manual_pending']);
+            $allOverdues = $currentMonthIsOverdue
+                ? $overdues->concat([$rentSchedule])
+                : $overdues;
+            $allOverdueLateFeeSummary = $currentMonthIsOverdue
+                ? $lateFeePolicyService->summarize($allOverdues, $property->late_payment_penalty, now())
+                : $overdueLateFeeSummary;
+
             if ($overdues->isNotEmpty()) {
                 $status = $overdues->contains('status', 'manual_pending')
                     ? 'manual_pending'
@@ -557,6 +566,9 @@ class PropertyController extends Controller
 
                 // oldest unpaid due date
                 $due_date = $overdues->first()->due_date;
+            } elseif ($currentMonthIsOverdue) {
+                $status = $rentSchedule->status === 'manual_pending' ? 'manual_pending' : 'overdue';
+                $due_date = $rentSchedule->due_date;
             } else {
                 $status = $rentSchedule->status ?? 'pending';
                 $due_date = $rentSchedule?->due_date;
@@ -589,18 +601,22 @@ class PropertyController extends Controller
             $property->late_fee_applied = $property->late_fee_amount > 0;
             $property->late_payment_penalty_policy = $property->late_payment_penalty;
             $property->late_fee_policy_active = ! empty($property->late_payment_penalty);
-            $property->overdue_months = $overdues->map(fn ($o) => [
-                'id' => $o->id,
-                'month' => Carbon::parse($o->month)->format('Y-m'),
-                'due_date' => Carbon::parse($o->due_date)->format('Y-m-d'),
-                'amount' => $o->amount,
-                'late_fee_amount' => round((float) collect($overdueLateFeeSummary['items'])->where('rent_schedule_id', $o->id)->sum('amount'), 2),
-                'payable_total' => round((float) $o->amount + (float) collect($overdueLateFeeSummary['items'])->where('rent_schedule_id', $o->id)->sum('amount'), 2),
-                'status' => $o->status,
-            ]);
+            $property->overdue_months = $allOverdues->map(function ($o) use ($allOverdueLateFeeSummary) {
+                $lateFeeItem = collect($allOverdueLateFeeSummary['items'])->firstWhere('rent_schedule_id', $o->id);
+                return [
+                    'id' => $o->id,
+                    'month' => Carbon::parse($o->month)->format('Y-m'),
+                    'due_date' => Carbon::parse($o->due_date)->format('Y-m-d'),
+                    'amount' => $o->amount,
+                    'late_fee_amount' => round((float) ($lateFeeItem['amount'] ?? 0), 2),
+                    'months_missed' => (int) ($lateFeeItem['months_missed'] ?? 0),
+                    'payable_total' => round((float) $o->amount + (float) ($lateFeeItem['amount'] ?? 0), 2),
+                    'status' => $o->status,
+                ];
+            });
 
-            $property->overdue_count = $overdues->count();
-            $property->overdue_total = round((float) $overdues->sum('amount') + (float) $overdueLateFeeSummary['total'], 2);
+            $property->overdue_count = $allOverdues->count();
+            $property->overdue_total = round((float) $allOverdues->sum('amount') + (float) $allOverdueLateFeeSummary['total'], 2);
             $property->security_deposit_amount = $tenancy?->security_deposit_amount;
             $property->security_deposit_status = $tenancy?->security_deposit_status;
             $property->isPaid = $status === 'paid';
@@ -771,13 +787,11 @@ class PropertyController extends Controller
             Payment::where([
                 'property_id' => $tenancy->property_id,
                 'tenant_id' => $tenancy->tenant_id,
+                'tenancy_id' => $tenancy->id,
                 'type' => 'security_deposit',
                 'payment_mode' => 'manual',
                 'status' => 'pending',
-            ])->where(function ($query) use ($tenancy) {
-                $query->where('tenancy_id', $tenancy->id)
-                    ->orWhereNull('tenancy_id');
-            })->update([
+            ])->update([
                 'status' => $request->status === 'approved' ? 'succeeded' : 'rejected',
             ]);
 
@@ -803,13 +817,10 @@ class PropertyController extends Controller
                 $payment = Payment::query()
                     ->where('property_id', $tenancy->property_id)
                     ->where('tenant_id', $tenancy->tenant_id)
+                    ->where('tenancy_id', $tenancy->id)
                     ->where('type', 'security_deposit')
                     ->where('payment_mode', 'manual')
                     ->where('status', 'succeeded')
-                    ->where(function ($query) use ($tenancy) {
-                        $query->where('tenancy_id', $tenancy->id)
-                            ->orWhereNull('tenancy_id');
-                    })
                     ->latest('id')
                     ->first();
 
@@ -873,14 +884,11 @@ class PropertyController extends Controller
 
             Payment::where('tenant_id', $tenancy->tenant_id)
                 ->where('property_id', $tenancy->property_id)
+                ->where('tenancy_id', $tenancy->id)
                 ->where('type', 'rent_deposit')
                 ->where('rent_schedule_id', $request->rent_schedule_id)
                 ->where('payment_mode', 'manual')
                 ->where('status', 'pending')
-                ->where(function ($query) use ($tenancy) {
-                    $query->where('tenancy_id', $tenancy->id)
-                        ->orWhereNull('tenancy_id');
-                })
                 ->update([
                     'status' => $request->status === 'approved' ? 'succeeded' : 'rejected',
                 ]);
@@ -905,14 +913,11 @@ class PropertyController extends Controller
                 $payment = Payment::query()
                     ->where('tenant_id', $tenancy->tenant_id)
                     ->where('property_id', $tenancy->property_id)
+                    ->where('tenancy_id', $tenancy->id)
                     ->where('type', 'rent_deposit')
                     ->where('rent_schedule_id', $request->rent_schedule_id)
                     ->where('payment_mode', 'manual')
                     ->where('status', 'succeeded')
-                    ->where(function ($query) use ($tenancy) {
-                        $query->where('tenancy_id', $tenancy->id)
-                            ->orWhereNull('tenancy_id');
-                    })
                     ->latest('id')
                     ->first();
 

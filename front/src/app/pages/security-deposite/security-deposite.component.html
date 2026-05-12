@@ -13,7 +13,7 @@
     </div>
     }
 
-    <div #cardElementRef class="form-control p-3 stripe-card-host"></div>
+    <div #cardElementRef class="form-control p-3 stripe-card-host" (click)="cardElementRef.focus()"></div>
 
     @if(message){
     <div class="alert alert-info mt-3">

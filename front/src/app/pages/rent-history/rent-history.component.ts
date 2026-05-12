@@ -86,7 +86,10 @@ export class RentHistoryComponent implements OnInit {
     };
 
     if (this.roles.includes('tenant')) {
-      payload.tenantId = this.user.user.id;
+      const tenantId = this.user?.user?.id ?? this.user?.id;
+      if (tenantId) {
+        payload.tenantId = tenantId;
+      }
     }
 
     if (this.propertyId) {

@@ -1,6 +1,6 @@
 <div class="modal-backdrop fade show"></div>
 
-<div class="modal fade show d-block" tabindex="-1" role="dialog" aria-hidden="false">
+<div class="modal fade show d-block" role="dialog" aria-hidden="false">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
 
@@ -39,7 +39,7 @@
         }
 
         @if (!useSavedCard) {
-        <div id="card-element" class="form-control p-3"></div>
+        <div #cardElementRef class="form-control p-3 stripe-card-host"></div>
 
         <label class="form-check mt-2">
           <input type="checkbox" class="form-check-input" [(ngModel)]="saveNewCard" />

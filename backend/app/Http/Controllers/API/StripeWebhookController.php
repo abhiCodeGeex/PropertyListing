@@ -71,13 +71,14 @@ class StripeWebhookController extends Controller
             : null;
         $policyText = (string) ($metadata->late_fee_policy_text ?? ($calculated['policy_text'] ?? ''));
 
-        $items = $lateFeeScheduleIds->map(function (int $scheduleId) use ($schedules, $lateFeeUnitAmount, $policyText) {
+        $items = $lateFeeScheduleIds->map(function (int $scheduleId) use ($schedules, $lateFeeUnitAmount, $policyText, $calculated) {
             $schedule = collect($schedules)->firstWhere('id', $scheduleId);
 
             if (! $schedule) {
                 return null;
             }
 
+            $calcItem = collect($calculated['items'] ?? [])->firstWhere('rent_schedule_id', $scheduleId);
             $dueDate = Carbon::parse($schedule->due_date)->startOfDay();
             $labelMonth = $schedule->month
                 ? Carbon::parse($schedule->month)->format('F Y')
@@ -87,7 +88,7 @@ class StripeWebhookController extends Controller
                 'rent_schedule_id' => $schedule->id,
                 'month' => $labelMonth,
                 'due_date' => $dueDate->toDateString(),
-                'amount' => $lateFeeUnitAmount ?? 0.0,
+                'amount' => $lateFeeUnitAmount ?? ($calcItem['amount'] ?? 0.0),
                 'policy_text' => $policyText,
             ];
         })->filter()->values()->all();

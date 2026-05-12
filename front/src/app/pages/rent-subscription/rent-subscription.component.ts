@@ -1,4 +1,14 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import {
+  AfterViewChecked,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnInit,
+  Output,
+  ViewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StripeService } from '../../services/stripe.service';
@@ -12,7 +22,7 @@ import { formatAppCurrency } from '../../shared/utils/currency.util';
   standalone: true,
   imports: [CommonModule, FormsModule]
 })
-export class RentSubscriptionComponent implements OnInit {
+export class RentSubscriptionComponent implements OnInit, AfterViewChecked {
   protected readonly formatCurrency = formatAppCurrency;
   @Input() tenancyId!: number;
   @Input() rent!: number;
@@ -23,6 +33,8 @@ export class RentSubscriptionComponent implements OnInit {
 
   @Output() closed = new EventEmitter<void>();
   @Output() paymentSuccess = new EventEmitter<any>();
+
+  @ViewChild('cardElementRef') cardElementRef!: ElementRef;
 
   stripe: any;
   elements: any;
@@ -36,13 +48,24 @@ export class RentSubscriptionComponent implements OnInit {
   useSavedCard = true;
   saveNewCard = true;
 
+  private pendingStripeMount = false;
+
   constructor(
     private stripeService: StripeService,
-    private rentService: RentService
+    private rentService: RentService,
+    private cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit() {
     this.loadSavedCard();
+  }
+
+  ngAfterViewChecked() {
+    // Mount Stripe once the card element div is rendered in the DOM
+    if (this.pendingStripeMount && this.cardElementRef?.nativeElement && this.cardElement) {
+      this.pendingStripeMount = false;
+      this.cardElement.mount(this.cardElementRef.nativeElement);
+    }
   }
 
   async loadSavedCard() {
@@ -70,13 +93,22 @@ export class RentSubscriptionComponent implements OnInit {
     this.elements = this.stripe.elements();
 
     this.cardElement = this.elements.create('card', { hidePostalCode: true });
-    setTimeout(() => this.cardElement.mount('#card-element'), 150);
+
+    // If the DOM element is already available, mount immediately;
+    // otherwise set a flag so ngAfterViewChecked mounts it once rendered.
+    if (this.cardElementRef?.nativeElement) {
+      this.cardElement.mount(this.cardElementRef.nativeElement);
+    } else {
+      this.pendingStripeMount = true;
+      this.cdr.detectChanges();
+    }
   }
 
   onCardChoiceChange() {
     if (this.useSavedCard && this.cardElement) {
       this.cardElement.destroy();
       this.cardElement = null;
+      this.pendingStripeMount = false;
     } else if (!this.useSavedCard) {
       this.initStripe();
     }

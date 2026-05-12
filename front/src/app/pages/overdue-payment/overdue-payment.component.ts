@@ -8,6 +8,7 @@ import {
   OnDestroy,
   ViewChild,
   ElementRef,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RentService } from '../../services/rent.service';
@@ -52,7 +53,8 @@ export class OverduePaymentComponent implements OnChanges, OnDestroy {
 
   constructor(
     private rentService: RentService,
-    private stripeService: StripeService
+    private stripeService: StripeService,
+    private cdr: ChangeDetectorRef
   ) { }
 
   /* ---------------- MODAL VISIBILITY ---------------- */
@@ -61,8 +63,10 @@ export class OverduePaymentComponent implements OnChanges, OnDestroy {
     if (changes['visible']?.currentValue === true) {
       this.loadOverdues();
 
-      // wait for DOM to render
-      setTimeout(() => this.initStripe(), 0);
+      // Force change detection so @if(visible) renders the card element in DOM,
+      // then wait for the next animation frame before mounting Stripe.
+      this.cdr.detectChanges();
+      setTimeout(() => this.initStripe(), 50);
     }
 
     if (changes['visible']?.currentValue === false) {
@@ -73,7 +77,7 @@ export class OverduePaymentComponent implements OnChanges, OnDestroy {
   /* ---------------- STRIPE INIT ---------------- */
 
   private async initStripe() {
-    if (this.stripeReady || !this.cardElementRef) return;
+    if (this.stripeReady || !this.cardElementRef?.nativeElement) return;
 
     this.stripe = await this.stripeService.getStripe();
     this.elements = this.stripe.elements();

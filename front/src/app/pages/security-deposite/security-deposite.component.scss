@@ -15,6 +15,13 @@
 
 .stripe-card-host {
   min-height: 3rem;
+  position: relative;
+  z-index: 1;
+
+  // Ensure the Stripe iframe can receive all pointer and keyboard events
+  iframe {
+    pointer-events: auto !important;
+  }
 }
 
 .payment-progress-overlay {

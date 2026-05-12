@@ -75,6 +75,12 @@
 
 #card-element {
   min-height: 3rem;
+  position: relative;
+
+  // Ensure the Stripe iframe can receive all pointer and keyboard events
+  iframe {
+    pointer-events: auto !important;
+  }
 }
 
 .payment-progress-overlay {

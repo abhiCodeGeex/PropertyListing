@@ -208,8 +208,6 @@ class RentSubscriptionController extends Controller
 
     private function lateFeeMetadata(array $lateFeeSummary): array
     {
-        $firstItem = collect($lateFeeSummary['items'] ?? [])->first();
-
         return [
             'late_fee_total' => (string) ((int) round(((float) ($lateFeeSummary['total'] ?? 0)) * 100)),
             'late_fee_reference_date' => $this->lateFeeReferenceDate()->toDateString(),
@@ -217,7 +215,6 @@ class RentSubscriptionController extends Controller
                 ->pluck('rent_schedule_id')
                 ->filter()
                 ->implode(','),
-            'late_fee_unit_amount' => (string) ((int) round(((float) ($firstItem['amount'] ?? 0)) * 100)),
             'late_fee_policy_text' => (string) ($lateFeeSummary['policy_text'] ?? ''),
         ];
     }
@@ -984,7 +981,7 @@ class RentSubscriptionController extends Controller
             if (
                 (int) $tenancy->subscription_active === 3
                 && $tenancy->subscription_cancel_at
-                && $tenancy->subscription_cancel_at->equalTo($cancelAt)
+                && $tenancy->subscription_cancel_at->toDateString() === $cancelAt->toDateString()
             ) {
                 return response()->json([
                     'message' => 'Subscription cancellation is already scheduled for month end.',

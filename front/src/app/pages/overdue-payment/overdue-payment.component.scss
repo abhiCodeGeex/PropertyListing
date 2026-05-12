@@ -23,6 +23,25 @@
   overflow-y: auto;
 }
 
+.card-element-wrapper {
+  position: relative;
+  z-index: 1;
+}
+
+.card-element {
+  min-height: 3rem;
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 0.375rem;
+  background: #fff;
+  position: relative;
+
+  // Ensure the Stripe iframe can receive all pointer and keyboard events
+  iframe {
+    pointer-events: auto !important;
+  }
+}
+
 .list-group-item {
   gap: 0.75rem;
 }

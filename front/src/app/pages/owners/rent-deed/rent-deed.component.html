@@ -221,7 +221,7 @@
                 <!-- Property -->
                 <div class="col-md-12">
                     <label class="form-label fw-semibold required-label">Property</label>
-                    <ng-select [items]="properties" bindLabel="propertyName" formControlName="propertyId"
+                    <ng-select [items]="properties" bindLabel="displayName" formControlName="propertyId"
                         placeholder="Select a property for this rent deed" [class.is-invalid]="hasError('propertyId')"
                         (change)="loadPropertyDetails($event)">
                     </ng-select>

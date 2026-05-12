@@ -84,6 +84,7 @@ class RentHistoryController extends Controller
             }
 
             return [
+                'id' => $payment->id,
                 'month' => $payment->rentSchedule?->month
                     ? Carbon::parse($payment->rentSchedule->month)->format('F Y')
                     : null,
